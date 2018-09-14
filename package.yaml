@@ -20,6 +20,10 @@ description:         Please see the README on GitHub at <https://github.com/will
 
 dependencies:
 - base >= 4.7 && < 5
+- lens
+- random
+- transformers
+- vector
 
 library:
   source-dirs: src
