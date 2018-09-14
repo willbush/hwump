@@ -5,4 +5,4 @@ module BSpec
 import Test.Hspec
 
 spec :: Spec
-spec = describe "Test B Spec" $ it "it can pass" $ True `shouldBe` True
+spec = describe "Test B Spec" $ it "can pass" $ True `shouldBe` True
