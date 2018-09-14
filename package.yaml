@@ -1,7 +1,7 @@
 name:                hwump
 version:             0.1.0.0
 github:              "willbush/hwump"
-license:             BSD3
+license:             MIT
 author:              "Will Bush"
 maintainer:          "will.g.bush@gmail.com"
 copyright:           "2018 Will Bush"
@@ -46,3 +46,4 @@ tests:
     - -with-rtsopts=-N
     dependencies:
     - hwump
+    - hspec
