@@ -1,0 +1,34 @@
+* HWUMP
+  
+  This is a toy project I'm working on to learn haskell. Currently, it's under
+  development.
+
+** TODOs
+  
+*** DONE figure out input architecture [1/1]
+    CLOSED: [2018-09-15 Sat 18:50]
+   
+    I need to figure out how to get inputs to flow from IO into pure functions
+    while keeping the game testable. In other words, I want to be able to mock
+    out the randomness of the game and pass in a list of inputs that the player
+    will make, and all of this should be in a pure context.
+   
+    1. [X] Make a game loop in main that increments player room number if the
+       user entered 'u' and decrements of 'd'. I want to do this just to get a
+       feel for how this will work.
+       
+    CLOSE NOTE: I can't think of a way to pass a stream of input into a pure
+    context. I think I basically need to perform discrete operations on the
+    game, and I can have some helper function for tests that can take a list of
+    operations and run them on the game.
+
+*** DONE create game map
+    CLOSED: [2018-09-12 Wed 01:55]
+  
+    After looking into 2D arrays, I realized I could just make it a vector of an
+    unboxed product type. Not that it matters if it is unboxed or not since this
+    doesn't need to be fast. However, it can be good practice to think about
+    memory usage since heap allocation is not any where near as obvious as it is
+    in Rust.
+   
+*** TODO implement player movement through the map
