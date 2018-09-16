@@ -12,7 +12,6 @@ mkInitialGame :: Game
 mkInitialGame =
   Game
     { _player = Player {_playerRoom = 0, arrowCount = 10}
-    , _wumpus = Wumpus {_wumpusRoom = 0, isAsleep = True}
     }
 
 loopGame :: Game -> IO ()
