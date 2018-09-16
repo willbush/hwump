@@ -7,7 +7,7 @@ import Test.Hspec
 import Test.QuickCheck
 
 spec :: Spec
-spec =
+spec = do
   describe "is adjacent" $ do
 
     it "returns false if any given room is out of bounds of the map" $ do
@@ -24,6 +24,16 @@ spec =
 
     it "returns true for room number n and n - 1 and n in bounds" $
       property moveToPrevRoomNumProperty
+
+  describe "move player" $ do
+    it "moves the player to given room if adjacent" $
+      let game = Game {_player = Player {_playerRoom = 1, arrowCount = 5}}
+          expected = Game {_player = Player {_playerRoom = 2, arrowCount = 5}}
+       in movePlayer 2 game `shouldBe` expected
+
+    it "does not move the player to given room if not adjacent" $
+      let game = Game {_player = Player {_playerRoom = 1, arrowCount = 5}}
+       in movePlayer 20 game `shouldBe` game
 
 -- | The current room and the current room plus one should always be
 -- adjacent unless either are out of bounds.

@@ -5,11 +5,12 @@ module Game
   , Player(..)
   , Room
   , isAdjacent
+  , movePlayer
   , mvPlayerUp
   , mvPlayerDown
   ) where
 
-import Control.Lens (makeLenses, over)
+import Control.Lens (makeLenses, over, set)
 import Control.Monad.Trans.State
 import qualified Data.Vector as V
 import System.Random
@@ -24,7 +25,7 @@ data AdjacentRooms = AdjacentRooms
 
 newtype Game = Game
   { _player :: Player
-  } deriving (Show)
+  } deriving (Show, Eq)
 
 data Player = Player
   { _playerRoom :: {-# UNPACK #-}!Room
@@ -80,6 +81,14 @@ gameMap =
     , AdjacentRooms 11 18 20
     , AdjacentRooms 13 16 19
     ]
+
+movePlayer :: Room -> Game -> Game
+movePlayer room game =
+  if isAdjacent room currentRoom
+    then set (player . playerRoom) room game
+    else game
+  where
+    currentRoom = (_playerRoom . _player) game
 
 isAdjacent :: Room -> Room -> Bool
 isAdjacent a b = isInBounds a && isInBounds b && isAdj a b
