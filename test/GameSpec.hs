@@ -9,15 +9,19 @@ import Test.QuickCheck
 spec :: Spec
 spec =
   describe "is adjacent" $ do
+
     it "returns false if any given room is out of bounds of the map" $ do
       isAdjacent 20 21 `shouldBe` False
       isAdjacent 21 20 `shouldBe` False
       isAdjacent 0 1 `shouldBe` False
       isAdjacent 1 0 `shouldBe` False
+
     it "returns true if the two given rooms are adjacent" $
       isAdjacent 1 2 `shouldBe` True
+
     it "returns true for room number n and n + 1 and n in bounds" $
-     property moveToNextRoomNumProperty
+      property moveToNextRoomNumProperty
+
     it "returns true for room number n and n - 1 and n in bounds" $
       property moveToPrevRoomNumProperty
 

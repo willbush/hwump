@@ -82,14 +82,13 @@ gameMap =
     ]
 
 isAdjacent :: Room -> Room -> Bool
-isAdjacent a b
-  | a < minRoom || b < minRoom = False
-  | a > maxRoom || b > maxRoom = False
-  | otherwise =
-    let adjRooms = gameMap V.! (a - 1)
-     in firstRoom adjRooms == b
-        || secondRoom adjRooms == b
-        || thirdRoom adjRooms == b
+isAdjacent a b = isInBounds a && isInBounds b && isAdj a b
   where
     minRoom = 1
     maxRoom = V.length gameMap
+    isInBounds x = x >= minRoom && x <= maxRoom
+    isAdj x y =
+      let adjRooms = gameMap V.! (x - 1)
+       in firstRoom adjRooms == y
+          || secondRoom adjRooms == y
+          || thirdRoom adjRooms == y
