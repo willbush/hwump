@@ -7,7 +7,7 @@ maintainer:          "will.g.bush@gmail.com"
 copyright:           "2018 Will Bush"
 
 extra-source-files:
-- README.md
+- README.org
 
 # Metadata used when publishing your package
 # synopsis:            Short description of your package
