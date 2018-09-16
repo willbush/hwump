@@ -1,4 +1,4 @@
-* Hunt the Wumpus TODOs [2/3]
+* Hunt the Wumpus TODOs [3/4]
 
 - [X] figure out input architecture [1/1]
 
@@ -25,4 +25,6 @@
    memory usage since heap allocation is not any where near as obvious as it is
    in Rust.
 
-- [ ] implement player movement through the map
+- [X] implement player movement through the map
+
+- [ ] add code to use move through the map from the console
