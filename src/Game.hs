@@ -6,8 +6,7 @@ module Game
   , Room
   , isAdjacent
   , movePlayer
-  , mvPlayerUp
-  , mvPlayerDown
+  , mkGame
   ) where
 
 import Control.Lens (makeLenses, over, set)
@@ -36,20 +35,11 @@ makeLenses ''Game
 
 makeLenses ''Player
 
-mvPlayerUp :: Game -> Game
-mvPlayerUp = over (player . playerRoom) (+ 1)
-
-mvPlayerDown :: Game -> Game
-mvPlayerDown = over (player . playerRoom) (subtract 1)
-
 mkGame :: Game
 mkGame = do
   let s = mkStdGen 0
       (room, _) = randomR (1, 6) s
   Game {_player = Player {_playerRoom = room, arrowCount = 10}}
-
-randRoom :: State StdGen Room
-randRoom = state $ randomR (1, 6)
 
 -- | The game map in Hunt the Wumpus is laid out as a dodecahedron. The vertices of
 -- the dodecahedron are considered rooms, and each room has 3 adjacent rooms. A

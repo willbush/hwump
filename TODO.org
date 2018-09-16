@@ -1,4 +1,4 @@
-* Hunt the Wumpus TODOs [3/4]
+* Hunt the Wumpus TODOs [4/4]
 
 - [X] figure out input architecture [1/1]
 
@@ -27,4 +27,4 @@
 
 - [X] implement player movement through the map
 
-- [ ] add code to use move through the map from the console
+- [X] add basic code to use move through the map from the console
