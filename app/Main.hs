@@ -16,6 +16,7 @@ main = loopGame makeGame
 loopGame :: Game -> IO ()
 loopGame game = do
   print game
+  printAdjacentRooms game
   command <- promptForCommand
   case command of
     Quit -> return ()
@@ -23,6 +24,14 @@ loopGame game = do
     Move -> do
       room <- promptForRoom $ getPlayerRoom game
       loopGame $ movePlayer room game
+
+printAdjacentRooms :: Game -> IO ()
+printAdjacentRooms game = do
+  let adjRooms = getCurrentAdjRooms game
+      a = firstRoom adjRooms
+      b = secondRoom adjRooms
+      c = thirdRoom adjRooms
+  putStrLn $ concat ["Tunnel leads to ", show a, " ", show b, " ", show c]
 
 promptForCommand :: IO Command
 promptForCommand = do

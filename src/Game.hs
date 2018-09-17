@@ -3,10 +3,12 @@
 module Game
   ( Game(..)
   , Player(..)
+  , AdjacentRooms(..)
   , Room
   , isAdjacent
   , movePlayer
   , getPlayerRoom
+  , getCurrentAdjRooms
   , makeGame
   ) where
 
@@ -72,6 +74,9 @@ gameMap =
     , AdjacentRooms 13 16 19
     ]
 
+getCurrentAdjRooms :: Game -> AdjacentRooms
+getCurrentAdjRooms = getAdjRoomsTo . getPlayerRoom
+
 getPlayerRoom :: Game -> Room
 getPlayerRoom = _playerRoom . _player
 
@@ -85,7 +90,10 @@ isAdjacent a b = isInBounds a && isInBounds b && isAdj a b
     maxRoom = V.length gameMap
     isInBounds x = x >= minRoom && x <= maxRoom
     isAdj x y =
-      let adjRooms = gameMap V.! (x - 1)
+      let adjRooms = getAdjRoomsTo x
        in firstRoom adjRooms == y
           || secondRoom adjRooms == y
           || thirdRoom adjRooms == y
+
+getAdjRoomsTo :: Room -> AdjacentRooms
+getAdjRoomsTo r = gameMap V.! (r - 1)
