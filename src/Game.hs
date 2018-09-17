@@ -6,13 +6,13 @@ module Game
   , Room
   , isAdjacent
   , movePlayer
-  , mkGame
+  , getPlayerRoom
+  , makeGame
   ) where
 
-import Control.Lens (makeLenses, over, set)
-import Control.Monad.Trans.State
-import qualified Data.Vector as V
-import System.Random
+import           Control.Lens  (makeLenses, set)
+import qualified Data.Vector   as V
+import           System.Random
 
 type Room = Int
 
@@ -35,8 +35,8 @@ makeLenses ''Game
 
 makeLenses ''Player
 
-mkGame :: Game
-mkGame = do
+makeGame :: Game
+makeGame = do
   let s = mkStdGen 0
       (room, _) = randomR (1, 6) s
   Game {_player = Player {_playerRoom = room, arrowCount = 10}}
@@ -72,13 +72,11 @@ gameMap =
     , AdjacentRooms 13 16 19
     ]
 
+getPlayerRoom :: Game -> Room
+getPlayerRoom = _playerRoom . _player
+
 movePlayer :: Room -> Game -> Game
-movePlayer room game =
-  if isAdjacent room currentRoom
-    then set (player . playerRoom) room game
-    else game
-  where
-    currentRoom = (_playerRoom . _player) game
+movePlayer = set (player . playerRoom)
 
 isAdjacent :: Room -> Room -> Bool
 isAdjacent a b = isInBounds a && isInBounds b && isAdj a b

@@ -1,18 +1,54 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Main where
 
-import Game
+import qualified Data.ByteString    as B
+import qualified Data.Text          as T
+import qualified Data.Text.Encoding as E
+import           Game
+import           Text.Read          (readMaybe)
+
+data Command = Shoot | Move | Quit
 
 main :: IO ()
-main = do
-  putStrLn "enter q to quit"
-  putStrLn "otherwise enter a number to move the player to."
-  loopGame mkGame
+main = loopGame makeGame
 
 loopGame :: Game -> IO ()
 loopGame game = do
-    print game
-    line <- getLine
-    print line
-    if line == "q"
-      then return ()
-      else loopGame $ movePlayer (read line :: Int) game
+  print game
+  command <- promptForCommand
+  case command of
+    Quit -> return ()
+    Shoot -> return ()
+    Move -> do
+      room <- promptForRoom $ getPlayerRoom game
+      loopGame $ movePlayer room game
+
+promptForCommand :: IO Command
+promptForCommand = do
+  putStrLn "Shoot, Move or Quit(S - M - Q)? "
+  strippedUpperLine <- (T.toUpper . T.strip . E.decodeUtf8) <$> B.getLine
+  case strippedUpperLine of
+    "S" -> return Shoot
+    "M" -> return Move
+    "Q" -> return Quit
+    _   -> promptForCommand
+
+promptForRoom :: Room -> IO Room
+promptForRoom current = do
+  putStrLn "Where to?"
+  line <- getLine
+  case readAdjacentTo current line of
+    Just next -> return next
+    Nothing -> do
+      putStr "Not Possible - "
+      promptForRoom current
+
+readAdjacentTo :: Room -> String -> Maybe Room
+readAdjacentTo current line =
+  case readMaybe line of
+    Just next ->
+      if isAdjacent next current
+        then Just next
+        else Nothing
+    Nothing -> Nothing

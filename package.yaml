@@ -24,6 +24,8 @@ dependencies:
 - random
 - transformers
 - vector
+- text
+- bytestring
 
 library:
   source-dirs: src
