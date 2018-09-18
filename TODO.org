@@ -1,4 +1,4 @@
-* Hunt the Wumpus TODOs [8/9]
+* Hunt the Wumpus TODOs [9/10]
 
 - [X] figure out input architecture [1/1]
 
@@ -37,4 +37,6 @@
 
 - [X] randomly initialize player position
 
-- [ ] add randomly initialized static hazards
+- [X] add randomly initialized static hazards
+
+- [ ] implement player death by falling into pit

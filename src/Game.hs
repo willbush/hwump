@@ -12,25 +12,28 @@ module Game
   , makeGame
   ) where
 
-import           Control.Lens  (makeLenses, set)
-import qualified Data.Vector   as V
-import qualified System.Random as R
+import           Control.Lens          (makeLenses, set)
+import qualified Data.Vector           as V
+import qualified System.Random         as R
+import           System.Random.Shuffle (shuffle')
 
 type Room = Int
 
 data AdjacentRooms = AdjacentRooms
-  { firstRoom  :: {-# UNPACK #-}!Room
-  , secondRoom :: {-# UNPACK #-}!Room
-  , thirdRoom  :: {-# UNPACK #-}!Room
+  { firstRoom  :: {-# UNPACK #-} !Room
+  , secondRoom :: {-# UNPACK #-} !Room
+  , thirdRoom  :: {-# UNPACK #-} !Room
   } deriving (Show)
 
-newtype Game = Game
-  { _player :: Player
+data Game = Game
+  { _player :: {-# UNPACK #-} !Player
+  , _pit1   :: {-# UNPACK #-} !Room
+  , _pit2   :: {-# UNPACK #-} !Room
   } deriving (Show, Eq)
 
 data Player = Player
-  { _playerRoom :: {-# UNPACK #-}!Room
-  , arrowCount  :: {-# UNPACK #-}!Int
+  { _playerRoom :: {-# UNPACK #-} !Room
+  , arrowCount  :: {-# UNPACK #-} !Int
   } deriving (Show, Eq)
 
 makeLenses ''Game
@@ -38,9 +41,14 @@ makeLenses ''Game
 makeLenses ''Player
 
 makeGame :: R.StdGen -> Game
-makeGame g = do
-  let (room, _) = R.randomR (1, 20) g
-  Game {_player = Player {_playerRoom = room, arrowCount = 10}}
+makeGame g =
+  let maxRoom = V.length gameMap
+      randRooms = V.fromList $ take 3 $ shuffle' [1 .. maxRoom] maxRoom g
+   in Game
+        { _player = Player {_playerRoom = randRooms V.! 0, arrowCount = 10}
+        , _pit1 = randRooms V.! 1
+        , _pit2 = randRooms V.! 2
+        }
 
 -- | The game map in Hunt the Wumpus is laid out as a dodecahedron. The vertices of
 -- the dodecahedron are considered rooms, and each room has 3 adjacent rooms. A
