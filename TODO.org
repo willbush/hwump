@@ -1,4 +1,4 @@
-* Hunt the Wumpus TODOs [7/9]
+* Hunt the Wumpus TODOs [8/9]
 
 - [X] figure out input architecture [1/1]
 
@@ -35,6 +35,6 @@
 
 - [X] print adjacent the tunnel leads to
 
-- [ ] randomly initialize player position
+- [X] randomly initialize player position
 
 - [ ] add randomly initialized static hazards

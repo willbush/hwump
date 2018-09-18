@@ -14,7 +14,7 @@ module Game
 
 import           Control.Lens  (makeLenses, set)
 import qualified Data.Vector   as V
-import           System.Random
+import qualified System.Random as R
 
 type Room = Int
 
@@ -37,10 +37,9 @@ makeLenses ''Game
 
 makeLenses ''Player
 
-makeGame :: Game
-makeGame = do
-  let s = mkStdGen 0
-      (room, _) = randomR (1, 6) s
+makeGame :: R.StdGen -> Game
+makeGame g = do
+  let (room, _) = R.randomR (1, 20) g
   Game {_player = Player {_playerRoom = room, arrowCount = 10}}
 
 -- | The game map in Hunt the Wumpus is laid out as a dodecahedron. The vertices of

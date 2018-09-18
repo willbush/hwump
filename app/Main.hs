@@ -6,12 +6,15 @@ import qualified Data.ByteString    as B
 import qualified Data.Text          as T
 import qualified Data.Text.Encoding as E
 import           Game
+import qualified System.Random      as R
 import           Text.Read          (readMaybe)
 
 data Command = Shoot | Move | Quit
 
 main :: IO ()
-main = loopGame makeGame
+main = do
+  g <- R.getStdGen
+  loopGame $ makeGame g
 
 loopGame :: Game -> IO ()
 loopGame game = do
@@ -36,7 +39,7 @@ printAdjacentRooms game = do
 promptForCommand :: IO Command
 promptForCommand = do
   putStrLn "Shoot, Move or Quit(S - M - Q)? "
-  strippedUpperLine <- (T.toUpper . T.strip . E.decodeUtf8) <$> B.getLine
+  strippedUpperLine <- T.toUpper . T.strip . E.decodeUtf8 <$> B.getLine
   case strippedUpperLine of
     "S" -> return Shoot
     "M" -> return Move
