@@ -4,12 +4,15 @@ module Game
   ( Game(..)
   , Player(..)
   , AdjacentRooms(..)
+  , EvalResult(..)
+  , DeathType(..)
   , Room
   , isAdjacent
   , movePlayer
   , getPlayerRoom
   , getCurrentAdjRooms
   , makeGame
+  , eval
   ) where
 
 import           Control.Lens          (makeLenses, set)
@@ -36,6 +39,10 @@ data Player = Player
   , arrowCount  :: {-# UNPACK #-} !Int
   } deriving (Show, Eq)
 
+data EvalResult = GameOver DeathType | GameOn deriving (Show, Eq)
+
+data DeathType = FellInPit | DeathByWumpus deriving (Show, Eq)
+
 makeLenses ''Game
 
 makeLenses ''Player
@@ -49,6 +56,13 @@ makeGame g =
         , _pit1 = randRooms V.! 1
         , _pit2 = randRooms V.! 2
         }
+
+eval :: Game -> EvalResult
+eval game =
+  let pr = getPlayerRoom game
+   in if pr == _pit1 game || pr == _pit2 game
+        then GameOver FellInPit
+        else GameOn
 
 -- | The game map in Hunt the Wumpus is laid out as a dodecahedron. The vertices of
 -- the dodecahedron are considered rooms, and each room has 3 adjacent rooms. A

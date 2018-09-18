@@ -19,14 +19,17 @@ main = do
 loopGame :: Game -> IO ()
 loopGame game = do
   print game
-  printAdjacentRooms game
-  command <- promptForCommand
-  case command of
-    Quit -> return ()
-    Shoot -> return ()
-    Move -> do
-      room <- promptForRoom $ getPlayerRoom game
-      loopGame $ movePlayer room game
+  case eval game of
+    GameOver FellInPit -> putStrLn "YYYIIIIEEEE... fell in a pit!"
+    _ -> do
+      printAdjacentRooms game
+      command <- promptForCommand
+      case command of
+        Quit -> return ()
+        Shoot -> return ()
+        Move -> do
+          room <- promptForRoom $ getPlayerRoom game
+          loopGame $ movePlayer room game
 
 printAdjacentRooms :: Game -> IO ()
 printAdjacentRooms game = do
