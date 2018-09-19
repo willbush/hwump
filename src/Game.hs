@@ -3,6 +3,7 @@
 module Game
   ( Game(..)
   , Player(..)
+  , Wumpus(..)
   , AdjacentRooms(..)
   , EvalResult(..)
   , DeathType(..)
@@ -32,16 +33,21 @@ data AdjacentRooms = AdjacentRooms
 
 data Game = Game
   { _player :: {-# UNPACK #-} !Player
-  , wumpus :: {-# UNPACK #-} !Room
-  , pit1   :: {-# UNPACK #-} !Room
-  , pit2   :: {-# UNPACK #-} !Room
-  , bat1   :: {-# UNPACK #-} !Room
-  , bat2   :: {-# UNPACK #-} !Room
+  , wumpus  :: {-# UNPACK #-} !Wumpus
+  , pit1    :: {-# UNPACK #-} !Room
+  , pit2    :: {-# UNPACK #-} !Room
+  , bat1    :: {-# UNPACK #-} !Room
+  , bat2    :: {-# UNPACK #-} !Room
   } deriving (Show, Eq)
 
 data Player = Player
   { _playerRoom :: {-# UNPACK #-} !Room
   , arrowCount  :: {-# UNPACK #-} !Int
+  } deriving (Show, Eq)
+
+data Wumpus = Wumpus
+  { wumpusRoom :: {-# UNPACK #-} !Room
+  , isAsleep   :: !Bool
   } deriving (Show, Eq)
 
 data EvalResult
@@ -61,11 +67,11 @@ makeGame g =
   let randRooms = V.fromList $ take 6 $ shuffle' [minRoom .. maxRoom] maxRoom g
    in Game
         { _player = Player {_playerRoom = randRooms V.! 0, arrowCount = 10}
-        , wumpus = randRooms V.! 1
-        , pit1   = randRooms V.! 2
-        , pit2   = randRooms V.! 3
-        , bat1   = randRooms V.! 4
-        , bat2   = randRooms V.! 5
+        , wumpus = Wumpus {wumpusRoom = randRooms V.! 1, isAsleep = True}
+        , pit1 = randRooms V.! 2
+        , pit2 = randRooms V.! 3
+        , bat1 = randRooms V.! 4
+        , bat2 = randRooms V.! 5
         }
 
 -- -- | Evaluates the current state of the game
@@ -73,9 +79,12 @@ eval :: Game -> EvalResult
 eval game
   | pr == pit1 game || pr == pit2 game = GameOver FellInPit
   | pr == bat1 game || pr == bat2 game = SuperBatSnatch
+  | pr == wr && not isAsleep' = GameOver DeathByWumpus
   | otherwise = GameOn
   where
     pr = getPlayerRoom game
+    wr = (wumpusRoom . wumpus) game
+    isAsleep' = (isAsleep . wumpus) game
 
 -- | The game map in Hunt the Wumpus is laid out as a dodecahedron. The vertices of
 -- the dodecahedron are considered rooms, and each room has 3 adjacent rooms. A

@@ -34,23 +34,35 @@ spec = do
       let game =
             Game
               { _player = Player {_playerRoom = 1, arrowCount = 1}
+              , wumpus = Wumpus {wumpusRoom = 20, isAsleep = True}
               , pit1 = 1
               , pit2 = 2
               , bat1 = 3
               , bat2 = 4
-              , wumpus = 20
               }
       eval game `shouldBe` GameOver FellInPit
+
+    it "returns game over if the player runs into the awake wumpus" $ do
+      let game =
+            Game
+              { _player = Player {_playerRoom = 1, arrowCount = 1}
+              , wumpus = Wumpus {wumpusRoom = 1, isAsleep = False}
+              , pit1 = 2
+              , pit2 = 3
+              , bat1 = 4
+              , bat2 = 5
+              }
+      eval game `shouldBe` GameOver DeathByWumpus
 
     it "returns bat snatch if the player went into a room with a bat." $ do
       let game =
             Game
               { _player = Player {_playerRoom = 1, arrowCount = 1}
+              , wumpus = Wumpus {wumpusRoom = 20, isAsleep = True}
               , bat1 = 1
               , bat2 = 2
               , pit1 = 3
               , pit2 = 4
-              , wumpus = 20
               }
       eval game `shouldBe` SuperBatSnatch
 
