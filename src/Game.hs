@@ -32,10 +32,11 @@ data AdjacentRooms = AdjacentRooms
 
 data Game = Game
   { _player :: {-# UNPACK #-} !Player
-  , _pit1   :: {-# UNPACK #-} !Room
-  , _pit2   :: {-# UNPACK #-} !Room
-  , _bat1   :: {-# UNPACK #-} !Room
-  , _bat2   :: {-# UNPACK #-} !Room
+  , wumpus :: {-# UNPACK #-} !Room
+  , pit1   :: {-# UNPACK #-} !Room
+  , pit2   :: {-# UNPACK #-} !Room
+  , bat1   :: {-# UNPACK #-} !Room
+  , bat2   :: {-# UNPACK #-} !Room
   } deriving (Show, Eq)
 
 data Player = Player
@@ -57,20 +58,21 @@ makeLenses ''Player
 
 makeGame :: R.StdGen -> Game
 makeGame g =
-  let randRooms = V.fromList $ take 5 $ shuffle' [minRoom .. maxRoom] maxRoom g
+  let randRooms = V.fromList $ take 6 $ shuffle' [minRoom .. maxRoom] maxRoom g
    in Game
         { _player = Player {_playerRoom = randRooms V.! 0, arrowCount = 10}
-        , _pit1 = randRooms V.! 1
-        , _pit2 = randRooms V.! 2
-        , _bat1 = randRooms V.! 3
-        , _bat2 = randRooms V.! 4
+        , wumpus = randRooms V.! 1
+        , pit1   = randRooms V.! 2
+        , pit2   = randRooms V.! 3
+        , bat1   = randRooms V.! 4
+        , bat2   = randRooms V.! 5
         }
 
 -- -- | Evaluates the current state of the game
 eval :: Game -> EvalResult
 eval game
-  | pr == _pit1 game || pr == _pit2 game = GameOver FellInPit
-  | pr == _bat1 game || pr == _bat2 game = SuperBatSnatch
+  | pr == pit1 game || pr == pit2 game = GameOver FellInPit
+  | pr == bat1 game || pr == bat2 game = SuperBatSnatch
   | otherwise = GameOn
   where
     pr = getPlayerRoom game

@@ -34,10 +34,11 @@ spec = do
       let game =
             Game
               { _player = Player {_playerRoom = 1, arrowCount = 1}
-              , _pit1 = 1
-              , _pit2 = 2
-              , _bat1 = 3
-              , _bat2 = 4
+              , pit1 = 1
+              , pit2 = 2
+              , bat1 = 3
+              , bat2 = 4
+              , wumpus = 20
               }
       eval game `shouldBe` GameOver FellInPit
 
@@ -45,10 +46,11 @@ spec = do
       let game =
             Game
               { _player = Player {_playerRoom = 1, arrowCount = 1}
-              , _bat1 = 1
-              , _bat2 = 2
-              , _pit1 = 3
-              , _pit2 = 4
+              , bat1 = 1
+              , bat2 = 2
+              , pit1 = 3
+              , pit2 = 4
+              , wumpus = 20
               }
       eval game `shouldBe` SuperBatSnatch
 
