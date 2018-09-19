@@ -12,6 +12,8 @@ module Game
   , getPlayerRoom
   , getCurrentAdjRooms
   , makeGame
+  , maxRoom
+  , minRoom
   , eval
   ) where
 
@@ -32,6 +34,8 @@ data Game = Game
   { _player :: {-# UNPACK #-} !Player
   , _pit1   :: {-# UNPACK #-} !Room
   , _pit2   :: {-# UNPACK #-} !Room
+  , _bat1   :: {-# UNPACK #-} !Room
+  , _bat2   :: {-# UNPACK #-} !Room
   } deriving (Show, Eq)
 
 data Player = Player
@@ -39,7 +43,11 @@ data Player = Player
   , arrowCount  :: {-# UNPACK #-} !Int
   } deriving (Show, Eq)
 
-data EvalResult = GameOver DeathType | GameOn deriving (Show, Eq)
+data EvalResult
+  = GameOver DeathType
+  | SuperBatSnatch
+  | GameOn
+  deriving (Show, Eq)
 
 data DeathType = FellInPit | DeathByWumpus deriving (Show, Eq)
 
@@ -49,20 +57,23 @@ makeLenses ''Player
 
 makeGame :: R.StdGen -> Game
 makeGame g =
-  let maxRoom = V.length gameMap
-      randRooms = V.fromList $ take 3 $ shuffle' [1 .. maxRoom] maxRoom g
+  let randRooms = V.fromList $ take 5 $ shuffle' [minRoom .. maxRoom] maxRoom g
    in Game
         { _player = Player {_playerRoom = randRooms V.! 0, arrowCount = 10}
         , _pit1 = randRooms V.! 1
         , _pit2 = randRooms V.! 2
+        , _bat1 = randRooms V.! 3
+        , _bat2 = randRooms V.! 4
         }
 
+-- -- | Evaluates the current state of the game
 eval :: Game -> EvalResult
-eval game =
-  let pr = getPlayerRoom game
-   in if pr == _pit1 game || pr == _pit2 game
-        then GameOver FellInPit
-        else GameOn
+eval game
+  | pr == _pit1 game || pr == _pit2 game = GameOver FellInPit
+  | pr == _bat1 game || pr == _bat2 game = SuperBatSnatch
+  | otherwise = GameOn
+  where
+    pr = getPlayerRoom game
 
 -- | The game map in Hunt the Wumpus is laid out as a dodecahedron. The vertices of
 -- the dodecahedron are considered rooms, and each room has 3 adjacent rooms. A
@@ -95,6 +106,12 @@ gameMap =
     , AdjacentRooms 13 16 19
     ]
 
+minRoom :: Room
+minRoom = 1;
+
+maxRoom :: Room
+maxRoom = 20;
+
 getCurrentAdjRooms :: Game -> AdjacentRooms
 getCurrentAdjRooms = getAdjRoomsTo . getPlayerRoom
 
@@ -107,8 +124,6 @@ movePlayer = set (player . playerRoom)
 isAdjacent :: Room -> Room -> Bool
 isAdjacent a b = isInBounds a && isInBounds b && isAdj a b
   where
-    minRoom = 1
-    maxRoom = V.length gameMap
     isInBounds x = x >= minRoom && x <= maxRoom
     isAdj x y =
       let adjRooms = getAdjRoomsTo x

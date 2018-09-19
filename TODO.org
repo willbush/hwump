@@ -1,4 +1,4 @@
-* Hunt the Wumpus TODOs [10/11]
+* Hunt the Wumpus TODOs [11/12]
 
 - [X] figure out input architecture [1/1]
 
@@ -41,4 +41,6 @@
 
 - [X] implement player death by falling into pit
 
-- [ ] add super bats and implement super bat snatch
+- [X] add super bats and implement super bat snatch
+
+- [ ] add and implement Wumpus

@@ -26,18 +26,31 @@ spec = do
     it "returns true for room number n and n - 1 and n in bounds" $
       property moveToPrevRoomNum
 
-  describe "analyze" $ do
+  describe "evaluate function" $ do
+    it "never returns game over from a newly made game" $
+      property newGameIsNeverGameOver
+
     it "returns game over if the player fell into a pit" $ do
       let game =
             Game
               { _player = Player {_playerRoom = 1, arrowCount = 1}
               , _pit1 = 1
               , _pit2 = 2
+              , _bat1 = 3
+              , _bat2 = 4
               }
       eval game `shouldBe` GameOver FellInPit
 
-    it "never returns game over from a newly made game" $
-      property newGameIsNeverGameOver
+    it "returns bat snatch if the player went into a room with a bat." $ do
+      let game =
+            Game
+              { _player = Player {_playerRoom = 1, arrowCount = 1}
+              , _bat1 = 1
+              , _bat2 = 2
+              , _pit1 = 3
+              , _pit2 = 4
+              }
+      eval game `shouldBe` SuperBatSnatch
 
 -- | The current room and the current room plus one should always be
 -- adjacent unless either are out of bounds.

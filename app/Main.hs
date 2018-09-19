@@ -21,7 +21,13 @@ loopGame game = do
   print game
   case eval game of
     GameOver FellInPit -> putStrLn "YYYIIIIEEEE... fell in a pit!"
-    _ -> do
+    GameOver DeathByWumpus -> putStrLn "Tsk tsk tsk - wumpus got you!"
+    SuperBatSnatch -> do
+      gen <- R.getStdGen
+      let (newRoom, _) = R.randomR (minRoom, maxRoom) gen
+      putStrLn "Zap--Super Bat snatch! Elsewhereville for you!"
+      loopGame $ movePlayer newRoom game
+    GameOn -> do
       printAdjacentRooms game
       command <- promptForCommand
       case command of
