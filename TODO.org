@@ -1,4 +1,4 @@
-* Hunt the Wumpus TODOs [11/12]
+* Hunt the Wumpus TODOs [11/13]
 
 - [X] figure out input architecture [1/1]
 
@@ -44,3 +44,5 @@
 - [X] add super bats and implement super bat snatch
 
 - [ ] add and implement Wumpus
+
+- [ ] fix random usage with State Monad

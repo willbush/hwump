@@ -10,18 +10,22 @@ module Game
   , Room
   , isAdjacent
   , movePlayer
+  , moveWumpus
+  , awakenWumpus
   , getPlayerRoom
   , getCurrentAdjRooms
   , makeGame
   , maxRoom
   , minRoom
   , eval
+  , update
   ) where
 
-import           Control.Lens          (makeLenses, set)
-import qualified Data.Vector           as V
-import qualified System.Random         as R
-import           System.Random.Shuffle (shuffle')
+import           Control.Lens              (makeLenses, set)
+import qualified Control.Monad.Trans.State as S
+import qualified Data.Vector               as V
+import qualified System.Random             as R
+import           System.Random.Shuffle     (shuffle')
 
 type Room = Int
 
@@ -33,7 +37,7 @@ data AdjacentRooms = AdjacentRooms
 
 data Game = Game
   { _player :: {-# UNPACK #-} !Player
-  , wumpus  :: {-# UNPACK #-} !Wumpus
+  , _wumpus :: {-# UNPACK #-} !Wumpus
   , pit1    :: {-# UNPACK #-} !Room
   , pit2    :: {-# UNPACK #-} !Room
   , bat1    :: {-# UNPACK #-} !Room
@@ -46,12 +50,13 @@ data Player = Player
   } deriving (Show, Eq)
 
 data Wumpus = Wumpus
-  { wumpusRoom :: {-# UNPACK #-} !Room
-  , isAsleep   :: !Bool
+  { _wumpusRoom :: {-# UNPACK #-} !Room
+  , _isAsleep   :: !Bool
   } deriving (Show, Eq)
 
 data EvalResult
   = GameOver DeathType
+  | BumpWumpus
   | SuperBatSnatch
   | GameOn
   deriving (Show, Eq)
@@ -62,29 +67,50 @@ makeLenses ''Game
 
 makeLenses ''Player
 
+makeLenses ''Wumpus
+
 makeGame :: R.StdGen -> Game
 makeGame g =
   let randRooms = V.fromList $ take 6 $ shuffle' [minRoom .. maxRoom] maxRoom g
    in Game
         { _player = Player {_playerRoom = randRooms V.! 0, arrowCount = 10}
-        , wumpus = Wumpus {wumpusRoom = randRooms V.! 1, isAsleep = True}
+        , _wumpus = Wumpus {_wumpusRoom = randRooms V.! 1, _isAsleep = True}
         , pit1 = randRooms V.! 2
         , pit2 = randRooms V.! 3
         , bat1 = randRooms V.! 4
         , bat2 = randRooms V.! 5
         }
 
--- -- | Evaluates the current state of the game
+-- | Evaluates the current state of the game
 eval :: Game -> EvalResult
 eval game
   | pr == pit1 game || pr == pit2 game = GameOver FellInPit
   | pr == bat1 game || pr == bat2 game = SuperBatSnatch
-  | pr == wr && not isAsleep' = GameOver DeathByWumpus
+  | not wumpIsAsleep && pr == wr = GameOver DeathByWumpus
+  | wumpIsAsleep && pr == wr = BumpWumpus
   | otherwise = GameOn
   where
     pr = getPlayerRoom game
-    wr = (wumpusRoom . wumpus) game
-    isAsleep' = (isAsleep . wumpus) game
+    wr = (_wumpusRoom . _wumpus) game
+    wumpIsAsleep = wumpusIsAsleep game
+
+update :: Game -> R.StdGen -> Game
+update game gen =
+  if not (wumpusIsAsleep game) && wumpFeelsLikeMoving gen
+    then let r = getRandAdjRoomToWumpus game gen
+          in moveWumpus r game
+    else game
+
+-- | The wumpus feels like moving with 75%
+wumpFeelsLikeMoving :: R.StdGen -> Bool
+wumpFeelsLikeMoving gen =
+  let (n, _) = R.randomR (1 :: Int, 4) gen
+   in n > 1
+
+getRandAdjRoomToWumpus :: Game -> R.StdGen -> Room
+getRandAdjRoomToWumpus game gen =
+  let adjRooms = getAdjRoomsTo' $ (_wumpusRoom . _wumpus) game
+   in head $ shuffle' adjRooms 3 gen
 
 -- | The game map in Hunt the Wumpus is laid out as a dodecahedron. The vertices of
 -- the dodecahedron are considered rooms, and each room has 3 adjacent rooms. A
@@ -132,15 +158,25 @@ getPlayerRoom = _playerRoom . _player
 movePlayer :: Room -> Game -> Game
 movePlayer = set (player . playerRoom)
 
+moveWumpus :: Room -> Game -> Game
+moveWumpus = set (wumpus . wumpusRoom)
+
+awakenWumpus :: Game -> Game
+awakenWumpus = set (wumpus . isAsleep) False
+
+wumpusIsAsleep :: Game -> Bool
+wumpusIsAsleep = _isAsleep . _wumpus
+
 isAdjacent :: Room -> Room -> Bool
 isAdjacent a b = isInBounds a && isInBounds b && isAdj a b
   where
     isInBounds x = x >= minRoom && x <= maxRoom
-    isAdj x y =
-      let adjRooms = getAdjRoomsTo x
-       in firstRoom adjRooms == y
-          || secondRoom adjRooms == y
-          || thirdRoom adjRooms == y
+    isAdj x y = elem y $ getAdjRoomsTo' x
 
 getAdjRoomsTo :: Room -> AdjacentRooms
 getAdjRoomsTo r = gameMap V.! (r - 1)
+
+getAdjRoomsTo' :: Room -> [Room]
+getAdjRoomsTo' r =
+  let rs = gameMap V.! (r - 1)
+   in [firstRoom rs, secondRoom rs, thirdRoom rs]
