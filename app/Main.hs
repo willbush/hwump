@@ -13,22 +13,24 @@ data Command = Shoot | Move | Quit
 
 main :: IO ()
 main = do
-  gen <- R.getStdGen
-  loopGame gen $ makeGame gen
+  game <- makeGame . R.mkStdGen <$> R.randomIO
+  loopGame game
 
-loopGame :: R.StdGen -> Game -> IO ()
-loopGame gen game = do
+loopGame :: Game -> IO ()
+loopGame game = do
   print game
+  gen <- R.mkStdGen <$> R.randomIO
   case eval (update game gen) of
     GameOver FellInPit -> putStrLn "YYYIIIIEEEE... fell in a pit!"
     GameOver DeathByWumpus -> putStrLn "Tsk tsk tsk - wumpus got you!"
     BumpWumpus -> do
       putStrLn "...Oops! Bumped a wumpus!"
-      loopGame gen $ awakenWumpus game
+      loopGame $ awakenWumpus game
     SuperBatSnatch -> do
-      let (newRoom, _) = R.randomR (minRoom, maxRoom) gen
+      g <- R.mkStdGen <$> R.randomIO
+      let (newRoom, _) = R.randomR (minRoom, maxRoom) g
       putStrLn "Zap--Super Bat snatch! Elsewhereville for you!"
-      loopGame gen $ movePlayer newRoom game
+      loopGame $ movePlayer newRoom game
     GameOn -> do
       printAdjacentRooms game
       command <- promptForCommand
@@ -37,7 +39,7 @@ loopGame gen game = do
         Shoot -> return ()
         Move -> do
           room <- promptForRoom $ getPlayerRoom game
-          loopGame gen $ movePlayer room game
+          loopGame $ movePlayer room game
 
 printAdjacentRooms :: Game -> IO ()
 printAdjacentRooms game = do
@@ -71,4 +73,4 @@ readAdjacentTo :: Room -> String -> Maybe Room
 readAdjacentTo current line =
   case readMaybe line of
     Just next | isAdjacent next current -> Just next
-    _ -> Nothing
+    _                                   -> Nothing

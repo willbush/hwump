@@ -21,11 +21,10 @@ module Game
   , update
   ) where
 
-import           Control.Lens              (makeLenses, set)
-import qualified Control.Monad.Trans.State as S
-import qualified Data.Vector               as V
-import qualified System.Random             as R
-import           System.Random.Shuffle     (shuffle')
+import           Control.Lens          (makeLenses, set)
+import qualified Data.Vector           as V
+import qualified System.Random         as R
+import           System.Random.Shuffle (shuffle')
 
 type Room = Int
 

@@ -23,7 +23,6 @@ dependencies:
 - lens
 - random
 - random-shuffle
-- transformers
 - vector
 - text
 - bytestring
