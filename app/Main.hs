@@ -13,22 +13,22 @@ data Command = Shoot | Move | Quit
 
 main :: IO ()
 main = do
-  game <- makeGame . R.mkStdGen <$> R.randomIO
-  loopGame game
+  gen <- mkGen
+  loopGame $ makeGame gen
 
 loopGame :: Game -> IO ()
-loopGame game = do
+loopGame g = do
+  game <- update g <$> mkGen
   print game
-  gen <- R.mkStdGen <$> R.randomIO
-  case eval (update game gen) of
+  case eval game of
     GameOver FellInPit -> putStrLn "YYYIIIIEEEE... fell in a pit!"
     GameOver DeathByWumpus -> putStrLn "Tsk tsk tsk - wumpus got you!"
     BumpWumpus -> do
       putStrLn "...Oops! Bumped a wumpus!"
       loopGame $ awakenWumpus game
     SuperBatSnatch -> do
-      g <- R.mkStdGen <$> R.randomIO
-      let (newRoom, _) = R.randomR (minRoom, maxRoom) g
+      gen' <- mkGen
+      let (newRoom, _) = R.randomR (minRoom, maxRoom) gen'
       putStrLn "Zap--Super Bat snatch! Elsewhereville for you!"
       loopGame $ movePlayer newRoom game
     GameOn -> do
@@ -40,6 +40,9 @@ loopGame game = do
         Move -> do
           room <- promptForRoom $ getPlayerRoom game
           loopGame $ movePlayer room game
+
+mkGen :: IO R.StdGen
+mkGen = R.mkStdGen <$> R.randomIO
 
 printAdjacentRooms :: Game -> IO ()
 printAdjacentRooms game = do
