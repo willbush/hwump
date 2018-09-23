@@ -1,4 +1,4 @@
-* Hunt the Wumpus TODOs [11/13]
+* Hunt the Wumpus TODOs [11/14]
 
 - [X] figure out input architecture [1/1]
 
@@ -45,4 +45,5 @@
 
 - [ ] add and implement Wumpus
 
-- [ ] fix random usage with State Monad
+- [ ] fix random usage with [[https://hackage.haskell.org/package/MonadRandom-0.1.3/docs/Control-Monad-Random.html][monad random]]
+

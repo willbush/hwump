@@ -41,6 +41,7 @@ loopGame g = do
           room <- promptForRoom $ getPlayerRoom game
           loopGame $ movePlayer room game
 
+-- | make random generator with seed form the system
 mkGen :: IO R.StdGen
 mkGen = R.mkStdGen <$> R.randomIO
 

@@ -95,16 +95,12 @@ eval game
 
 update :: Game -> R.StdGen -> Game
 update game gen =
-  if not (wumpusIsAsleep game) && wumpFeelsLikeMoving gen
-    then let r = getRandAdjRoomToWumpus game gen
-          in moveWumpus r game
-    else game
-
--- | The wumpus feels like moving with 75%
-wumpFeelsLikeMoving :: R.StdGen -> Bool
-wumpFeelsLikeMoving gen =
-  let (n, _) = R.randomR (1 :: Int, 4) gen
-   in n > 1
+  let (n, s) = R.randomR (1 :: Int, 4) gen
+      wumpusFeelsLIkeMoving = n > 1
+   in if not (wumpusIsAsleep game) && wumpusFeelsLIkeMoving
+        then let r = getRandAdjRoomToWumpus game s
+              in moveWumpus r game
+        else game
 
 getRandAdjRoomToWumpus :: Game -> R.StdGen -> Room
 getRandAdjRoomToWumpus game gen =
