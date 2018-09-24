@@ -34,7 +34,7 @@ spec = do
       let game =
             Game
               { _player = Player {_playerRoom = 1, arrowCount = 1}
-              , _wumpus = Wumpus {_wumpusRoom = 20, _isAsleep = True}
+              , _wumpus = Wumpus {_wumpusRoom = 20, _isSleeping = True}
               , pit1 = 1
               , pit2 = 2
               , bat1 = 3
@@ -46,7 +46,7 @@ spec = do
       let game =
             Game
               { _player = Player {_playerRoom = 1, arrowCount = 1}
-              , _wumpus = Wumpus {_wumpusRoom = 1, _isAsleep = False}
+              , _wumpus = Wumpus {_wumpusRoom = 1, _isSleeping = False}
               , pit1 = 2
               , pit2 = 3
               , bat1 = 4
@@ -58,7 +58,7 @@ spec = do
       let game =
             Game
               { _player = Player {_playerRoom = 1, arrowCount = 1}
-              , _wumpus = Wumpus {_wumpusRoom = 20, _isAsleep = True}
+              , _wumpus = Wumpus {_wumpusRoom = 20, _isSleeping = True}
               , bat1 = 1
               , bat2 = 2
               , pit1 = 3

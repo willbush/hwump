@@ -51,7 +51,7 @@ data Player = Player
 
 data Wumpus = Wumpus
   { _wumpusRoom :: {-# UNPACK #-} !Room
-  , _isAsleep   :: !Bool
+  , _isSleeping   :: !Bool
   } deriving (Show, Eq)
 
 data EvalResult
@@ -76,7 +76,7 @@ makeGame = do
   return
     Game
       { _player = Player {_playerRoom = randRooms V.! 0, arrowCount = 10}
-      , _wumpus = Wumpus {_wumpusRoom = randRooms V.! 1, _isAsleep = True}
+      , _wumpus = Wumpus {_wumpusRoom = randRooms V.! 1, _isSleeping = True}
       , pit1 = randRooms V.! 2
       , pit2 = randRooms V.! 3
       , bat1 = randRooms V.! 4
@@ -88,19 +88,19 @@ eval :: Game -> EvalResult
 eval game
   | pr == pit1 game || pr == pit2 game = GameOver FellInPit
   | pr == bat1 game || pr == bat2 game = SuperBatSnatch
-  | not wumpIsAsleep && pr == wr = GameOver DeathByWumpus
-  | wumpIsAsleep && pr == wr = BumpWumpus
+  | not wumpIsSleeping && pr == wr = GameOver DeathByWumpus
+  | wumpIsSleeping && pr == wr = BumpWumpus
   | otherwise = GameOn
   where
     pr = getPlayerRoom game
     wr = (_wumpusRoom . _wumpus) game
-    wumpIsAsleep = wumpusIsAsleep game
+    wumpIsSleeping = wumpusIsSleeping game
 
 update :: (R.RandomGen g) => Game -> R.Rand g Game
 update game = do
   n <- R.getRandomR (1 :: Int, 4)
   let wumpusFeelsLIkeMoving = n > 1
-  if not (wumpusIsAsleep game) && wumpusFeelsLIkeMoving
+  if not (wumpusIsSleeping game) && wumpusFeelsLIkeMoving
     then do
       r <- getRandAdjRoomToWumpus game
       return $ moveWumpus r game
@@ -162,10 +162,10 @@ moveWumpus :: Room -> Game -> Game
 moveWumpus = set (wumpus . wumpusRoom)
 
 awakenWumpus :: Game -> Game
-awakenWumpus = set (wumpus . isAsleep) False
+awakenWumpus = set (wumpus . isSleeping) False
 
-wumpusIsAsleep :: Game -> Bool
-wumpusIsAsleep = _isAsleep . _wumpus
+wumpusIsSleeping :: Game -> Bool
+wumpusIsSleeping = _isSleeping . _wumpus
 
 isAdjacent :: Room -> Room -> Bool
 isAdjacent a b = isInBounds a && isInBounds b && isAdj a b

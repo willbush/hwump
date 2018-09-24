@@ -74,5 +74,5 @@ promptForRoom current = do
 readAdjacentTo :: Room -> String -> Maybe Room
 readAdjacentTo current line =
   case readMaybe line of
-    Just next | isAdjacent current next  -> Just next
+    Just next | isAdjacent current next -> Just next
     _                                   -> Nothing
