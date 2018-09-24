@@ -21,11 +21,11 @@ description:         Please see the README on GitHub at <https://github.com/will
 dependencies:
 - base >= 4.7 && < 5
 - lens
-- random
 - random-shuffle
 - vector
 - text
 - bytestring
+- MonadRandom
 
 library:
   source-dirs: src

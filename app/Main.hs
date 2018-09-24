@@ -2,23 +2,21 @@
 
 module Main where
 
-import qualified Data.ByteString    as B
-import qualified Data.Text          as T
-import qualified Data.Text.Encoding as E
+import qualified Control.Monad.Random as R
+import qualified Data.ByteString      as B
+import qualified Data.Text            as T
+import qualified Data.Text.Encoding   as E
 import           Game
-import qualified System.Random      as R
-import           Text.Read          (readMaybe)
+import           Text.Read            (readMaybe)
 
 data Command = Shoot | Move | Quit
 
 main :: IO ()
-main = do
-  gen <- mkGen
-  loopGame $ makeGame gen
+main = R.evalRandIO makeGame >>= loopGame
 
 loopGame :: Game -> IO ()
 loopGame g = do
-  game <- update g <$> mkGen
+  game <- R.evalRandIO $ update g
   print game
   case eval game of
     GameOver FellInPit -> putStrLn "YYYIIIIEEEE... fell in a pit!"
@@ -27,8 +25,7 @@ loopGame g = do
       putStrLn "...Oops! Bumped a wumpus!"
       loopGame $ awakenWumpus game
     SuperBatSnatch -> do
-      gen' <- mkGen
-      let (newRoom, _) = R.randomR (minRoom, maxRoom) gen'
+      newRoom <- R.evalRandIO $ R.getRandomR (minRoom, maxRoom)
       putStrLn "Zap--Super Bat snatch! Elsewhereville for you!"
       loopGame $ movePlayer newRoom game
     GameOn -> do
@@ -41,17 +38,18 @@ loopGame g = do
           room <- promptForRoom $ getPlayerRoom game
           loopGame $ movePlayer room game
 
--- | make random generator with seed form the system
-mkGen :: IO R.StdGen
-mkGen = R.mkStdGen <$> R.randomIO
-
 printAdjacentRooms :: Game -> IO ()
 printAdjacentRooms game = do
   let adjRooms = getCurrentAdjRooms game
-      a = firstRoom adjRooms
-      b = secondRoom adjRooms
-      c = thirdRoom adjRooms
-  putStrLn $ concat ["Tunnel leads to ", show a, " ", show b, " ", show c]
+  putStrLn $
+    concat
+      [ "Tunnel leads to "
+      , (show . firstRoom) adjRooms
+      , " "
+      , (show . secondRoom) adjRooms
+      , " "
+      , (show . thirdRoom) adjRooms
+      ]
 
 promptForCommand :: IO Command
 promptForCommand = do
@@ -76,5 +74,5 @@ promptForRoom current = do
 readAdjacentTo :: Room -> String -> Maybe Room
 readAdjacentTo current line =
   case readMaybe line of
-    Just next | isAdjacent next current -> Just next
+    Just next | isAdjacent current next  -> Just next
     _                                   -> Nothing

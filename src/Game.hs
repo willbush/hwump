@@ -22,9 +22,10 @@ module Game
   ) where
 
 import           Control.Lens          (makeLenses, set)
+import qualified Control.Monad         as M
+import qualified Control.Monad.Random  as R
 import qualified Data.Vector           as V
-import qualified System.Random         as R
-import           System.Random.Shuffle (shuffle')
+import           System.Random.Shuffle (shuffleM)
 
 type Room = Int
 
@@ -68,17 +69,19 @@ makeLenses ''Player
 
 makeLenses ''Wumpus
 
-makeGame :: R.StdGen -> Game
-makeGame g =
-  let randRooms = V.fromList $ take 6 $ shuffle' [minRoom .. maxRoom] maxRoom g
-   in Game
-        { _player = Player {_playerRoom = randRooms V.! 0, arrowCount = 10}
-        , _wumpus = Wumpus {_wumpusRoom = randRooms V.! 1, _isAsleep = True}
-        , pit1 = randRooms V.! 2
-        , pit2 = randRooms V.! 3
-        , bat1 = randRooms V.! 4
-        , bat2 = randRooms V.! 5
-        }
+makeGame :: (R.RandomGen g) => R.Rand g Game
+makeGame = do
+  shuffledRooms <- shuffleM [minRoom .. maxRoom]
+  let randRooms = V.fromList $ take 6 $ shuffledRooms
+  return
+    Game
+      { _player = Player {_playerRoom = randRooms V.! 0, arrowCount = 10}
+      , _wumpus = Wumpus {_wumpusRoom = randRooms V.! 1, _isAsleep = True}
+      , pit1 = randRooms V.! 2
+      , pit2 = randRooms V.! 3
+      , bat1 = randRooms V.! 4
+      , bat2 = randRooms V.! 5
+      }
 
 -- | Evaluates the current state of the game
 eval :: Game -> EvalResult
@@ -93,19 +96,21 @@ eval game
     wr = (_wumpusRoom . _wumpus) game
     wumpIsAsleep = wumpusIsAsleep game
 
-update :: Game -> R.StdGen -> Game
-update game gen =
-  let (n, s) = R.randomR (1 :: Int, 4) gen
-      wumpusFeelsLIkeMoving = n > 1
-   in if not (wumpusIsAsleep game) && wumpusFeelsLIkeMoving
-        then let r = getRandAdjRoomToWumpus game s
-              in moveWumpus r game
-        else game
+update :: (R.RandomGen g) => Game -> R.Rand g Game
+update game = do
+  n <- R.getRandomR (1 :: Int, 4)
+  let wumpusFeelsLIkeMoving = n > 1
+  if not (wumpusIsAsleep game) && wumpusFeelsLIkeMoving
+    then do
+      r <- getRandAdjRoomToWumpus game
+      return $ moveWumpus r game
+    else return game
 
-getRandAdjRoomToWumpus :: Game -> R.StdGen -> Room
-getRandAdjRoomToWumpus game gen =
+getRandAdjRoomToWumpus :: (R.RandomGen g) => Game -> R.Rand g Room
+getRandAdjRoomToWumpus game = do
   let adjRooms = getAdjRoomsTo' $ (_wumpusRoom . _wumpus) game
-   in head $ shuffle' adjRooms 3 gen
+  shuffledRooms <- shuffleM adjRooms
+  return $ head shuffledRooms
 
 -- | The game map in Hunt the Wumpus is laid out as a dodecahedron. The vertices of
 -- the dodecahedron are considered rooms, and each room has 3 adjacent rooms. A

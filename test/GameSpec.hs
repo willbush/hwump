@@ -2,8 +2,8 @@ module GameSpec
   ( spec
   ) where
 
+import qualified Control.Monad.Random as R
 import           Game
-import qualified System.Random   as R
 import           Test.Hspec
 import           Test.QuickCheck
 
@@ -87,5 +87,5 @@ moveToPrevRoomNum x =
 -- | A newly created game should never evaluate to a game over state.
 newGameIsNeverGameOver :: Int -> Bool
 newGameIsNeverGameOver n =
-  let evalResult = eval $ makeGame $ R.mkStdGen n
+  let evalResult = eval $ R.evalRand makeGame (R.mkStdGen n)
    in evalResult == GameOn
