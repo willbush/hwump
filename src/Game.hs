@@ -7,9 +7,11 @@ module Game
   , AdjacentRooms(..)
   , EvalResult(..)
   , DeathType(..)
+  , ShootResult(..)
   , Room
   , isAdjacent
   , movePlayer
+  , decrementArrowCount
   , moveWumpus
   , awakenWumpus
   , getPlayerRoom
@@ -19,10 +21,10 @@ module Game
   , minRoom
   , eval
   , update
+  , shoot
   ) where
 
 import           Control.Lens          (makeLenses, set)
-import qualified Control.Monad         as M
 import qualified Control.Monad.Random  as R
 import qualified Data.Vector           as V
 import           System.Random.Shuffle (shuffleM)
@@ -46,12 +48,12 @@ data Game = Game
 
 data Player = Player
   { _playerRoom :: {-# UNPACK #-} !Room
-  , arrowCount  :: {-# UNPACK #-} !Int
+  , _arrowCount :: {-# UNPACK #-} !Int
   } deriving (Show, Eq)
 
 data Wumpus = Wumpus
   { _wumpusRoom :: {-# UNPACK #-} !Room
-  , _isSleeping   :: !Bool
+  , _isSleeping :: !Bool
   } deriving (Show, Eq)
 
 data EvalResult
@@ -61,7 +63,17 @@ data EvalResult
   | GameOn
   deriving (Show, Eq)
 
-data DeathType = FellInPit | DeathByWumpus deriving (Show, Eq)
+data DeathType
+  = FellInPit
+  | DeathByWumpus
+  | OutOfArrows
+  deriving (Show, Eq)
+
+data ShootResult
+  = HitWumpus
+  | Suicide
+  | Miss
+  deriving (Show, Eq)
 
 makeLenses ''Game
 
@@ -72,10 +84,10 @@ makeLenses ''Wumpus
 makeGame :: (R.RandomGen g) => R.Rand g Game
 makeGame = do
   shuffledRooms <- shuffleM [minRoom .. maxRoom]
-  let randRooms = V.fromList $ take 6 $ shuffledRooms
+  let randRooms = V.fromList $ take 6 shuffledRooms
   return
     Game
-      { _player = Player {_playerRoom = randRooms V.! 0, arrowCount = 10}
+      { _player = Player {_playerRoom = randRooms V.! 0, _arrowCount = 5}
       , _wumpus = Wumpus {_wumpusRoom = randRooms V.! 1, _isSleeping = True}
       , pit1 = randRooms V.! 2
       , pit2 = randRooms V.! 3
@@ -88,9 +100,10 @@ eval :: Game -> EvalResult
 eval game
   | pr == pit1 game || pr == pit2 game = GameOver FellInPit
   | pr == bat1 game || pr == bat2 game = SuperBatSnatch
-  | not wumpIsSleeping && pr == wr = GameOver DeathByWumpus
-  | wumpIsSleeping && pr == wr = BumpWumpus
-  | otherwise = GameOn
+  | not wumpIsSleeping && pr == wr     = GameOver DeathByWumpus
+  | wumpIsSleeping && pr == wr         = BumpWumpus
+  | (_arrowCount . _player) game == 0  = GameOver OutOfArrows
+  | otherwise                          = GameOn
   where
     pr = getPlayerRoom game
     wr = (_wumpusRoom . _wumpus) game
@@ -99,12 +112,22 @@ eval game
 update :: (R.RandomGen g) => Game -> R.Rand g Game
 update game = do
   n <- R.getRandomR (1 :: Int, 4)
-  let wumpusFeelsLIkeMoving = n > 1
-  if not (wumpusIsSleeping game) && wumpusFeelsLIkeMoving
+  let wumpusFeelsLikeMoving = n > 1
+  if not (wumpusIsSleeping game) && wumpusFeelsLikeMoving
     then do
       r <- getRandAdjRoomToWumpus game
       return $ moveWumpus r game
     else return game
+
+shoot :: [Room] -> Game -> ShootResult
+shoot [] _ = Miss
+shoot (room:rooms) game
+  | room == wr = HitWumpus
+  | room == pr = Suicide
+  | otherwise  = shoot rooms game
+  where
+    wr = (_wumpusRoom . _wumpus) game
+    pr = getPlayerRoom game
 
 getRandAdjRoomToWumpus :: (R.RandomGen g) => Game -> R.Rand g Room
 getRandAdjRoomToWumpus game = do
@@ -157,6 +180,11 @@ getPlayerRoom = _playerRoom . _player
 
 movePlayer :: Room -> Game -> Game
 movePlayer = set (player . playerRoom)
+
+decrementArrowCount :: Game -> Game
+decrementArrowCount game =
+  let current = (_arrowCount . _player) game
+   in set (player . arrowCount) (current - 1) game
 
 moveWumpus :: Room -> Game -> Game
 moveWumpus = set (wumpus . wumpusRoom)

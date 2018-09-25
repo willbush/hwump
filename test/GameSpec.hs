@@ -31,40 +31,45 @@ spec = do
       property newGameIsNeverGameOver
 
     it "returns game over if the player fell into a pit" $ do
-      let game =
-            Game
-              { _player = Player {_playerRoom = 1, arrowCount = 1}
-              , _wumpus = Wumpus {_wumpusRoom = 20, _isSleeping = True}
-              , pit1 = 1
-              , pit2 = 2
-              , bat1 = 3
-              , bat2 = 4
-              }
+      let pitRoom = pit1 gameTemplate
+          game = movePlayer pitRoom gameTemplate
       eval game `shouldBe` GameOver FellInPit
 
     it "returns game over if the player runs into the awake wumpus" $ do
-      let game =
-            Game
-              { _player = Player {_playerRoom = 1, arrowCount = 1}
-              , _wumpus = Wumpus {_wumpusRoom = 1, _isSleeping = False}
-              , pit1 = 2
-              , pit2 = 3
-              , bat1 = 4
-              , bat2 = 5
-              }
+      let wumpusRoom = (_wumpusRoom . _wumpus) gameTemplate
+          game = movePlayer wumpusRoom $ awakenWumpus gameTemplate
       eval game `shouldBe` GameOver DeathByWumpus
 
     it "returns bat snatch if the player went into a room with a bat." $ do
-      let game =
-            Game
-              { _player = Player {_playerRoom = 1, arrowCount = 1}
-              , _wumpus = Wumpus {_wumpusRoom = 20, _isSleeping = True}
-              , bat1 = 1
-              , bat2 = 2
-              , pit1 = 3
-              , pit2 = 4
-              }
+      let batRoom = bat1 gameTemplate
+          game = movePlayer batRoom gameTemplate
       eval game `shouldBe` SuperBatSnatch
+
+    it "returns game over if the player runs out of arrows." $ do
+      let zeroArrowGame = decrementArrowCount gameTemplate
+      eval zeroArrowGame `shouldBe` GameOver OutOfArrows
+
+  describe "shoot function" $ do
+    it "can miss." $
+      shoot [8, 9, 10, 11, 12] gameTemplate `shouldBe` Miss
+
+    it "can suicide." $
+      shoot [5, 6, 7, 8, 1] gameTemplate `shouldBe` Suicide
+
+    it "can hit the Wumpus." $
+      shoot [2] gameTemplate `shouldBe` HitWumpus
+
+-- | A simple game template to use in tests.
+gameTemplate :: Game
+gameTemplate =
+  Game
+    { _player = Player {_playerRoom = 1, _arrowCount = 1}
+    , _wumpus = Wumpus {_wumpusRoom = 2, _isSleeping = True}
+    , pit1 = 3
+    , pit2 = 4
+    , bat1 = 5
+    , bat2 = 6
+    }
 
 -- | The current room and the current room plus one should always be
 -- adjacent unless either are out of bounds.

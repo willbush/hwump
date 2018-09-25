@@ -1,4 +1,4 @@
-* Hunt the Wumpus TODOs [13/15]
+* Hunt the Wumpus TODOs [15/17]
 
 - [X] figure out input architecture [1/1]
 
@@ -47,7 +47,11 @@
 
 - [X] fix random usage with [[https://hackage.haskell.org/package/MonadRandom-0.1.3/docs/Control-Monad-Random.html][monad random]]
 
-- [ ] add player shooting
+- [X] add game over state for running out of arrows
+  
+- [X] implement crude player shooting
+  
+- [ ] complete player shooting
 
 - [ ] print warnings for entities in adjacent rooms
 

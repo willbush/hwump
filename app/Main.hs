@@ -21,6 +21,7 @@ loopGame g = do
   case eval game of
     GameOver FellInPit -> putStrLn "YYYIIIIEEEE... fell in a pit!"
     GameOver DeathByWumpus -> putStrLn "Tsk tsk tsk - wumpus got you!"
+    GameOver OutOfArrows -> putStrLn "You've run out of arrows!"
     BumpWumpus -> do
       putStrLn "...Oops! Bumped a wumpus!"
       loopGame $ awakenWumpus game
