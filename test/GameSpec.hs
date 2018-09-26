@@ -50,14 +50,18 @@ spec = do
       eval zeroArrowGame `shouldBe` GameOver OutOfArrows
 
   describe "shoot function" $ do
-    it "can miss." $
-      shoot [8, 9, 10, 11, 12] gameTemplate `shouldBe` Miss
+    it "can miss." $ do
+      shoot [] gameTemplate `shouldBe` Miss []
+      let rooms = [8, 9, 10, 11, 12]
+      shoot rooms gameTemplate `shouldBe` Miss rooms
 
     it "can suicide." $
-      shoot [5, 6, 7, 8, 1] gameTemplate `shouldBe` Suicide
+      let rooms = [5, 6, 7, 8, 1]
+       in shoot rooms gameTemplate `shouldBe` Suicide rooms
 
     it "can hit the Wumpus." $
-      shoot [2] gameTemplate `shouldBe` HitWumpus
+      let rooms = [2]
+       in shoot rooms gameTemplate `shouldBe` HitWumpus rooms
 
 -- | A simple game template to use in tests.
 gameTemplate :: Game

@@ -66,9 +66,9 @@ data DeathType
   deriving (Show, Eq)
 
 data ShootResult
-  = HitWumpus
-  | Suicide
-  | Miss
+  = HitWumpus [Room]
+  | Suicide [Room]
+  | Miss [Room]
   deriving (Show, Eq)
 
 makeLenses ''Game
@@ -116,14 +116,16 @@ update game = do
     else return game
 
 shoot :: [Room] -> Game -> ShootResult
-shoot [] _ = Miss
-shoot (room:rooms) game
-  | room == wr = HitWumpus
-  | room == pr = Suicide
-  | otherwise  = shoot rooms game
+shoot rooms game = go rooms game []
   where
-    wr = (_wumpusRoom . _wumpus) game
-    pr = getPlayerRoom game
+    go [] _ acc = Miss $ reverse acc
+    go (r:rs) g acc
+      | r == wr = HitWumpus $ reverse $ r : acc
+      | r == pr = Suicide $ reverse $ r : acc
+      | otherwise = go rs g $ r : acc
+      where
+        wr = (_wumpusRoom . _wumpus) game
+        pr = getPlayerRoom game
 
 getRandAdjRoomToWumpus :: (R.RandomGen g) => Game -> R.Rand g Room
 getRandAdjRoomToWumpus game = do
