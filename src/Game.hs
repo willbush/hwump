@@ -4,7 +4,7 @@ module Game
   ( Game(..)
   , Player(..)
   , Wumpus(..)
-  , AdjacentRooms(..)
+  , AdjRooms(..)
   , EvalResult(..)
   , DeathType(..)
   , ShootResult(..)
@@ -31,28 +31,24 @@ import           System.Random.Shuffle (shuffleM)
 
 type Room = Int
 
-data AdjacentRooms = AdjacentRooms
-  { firstRoom  :: {-# UNPACK #-} !Room
-  , secondRoom :: {-# UNPACK #-} !Room
-  , thirdRoom  :: {-# UNPACK #-} !Room
-  } deriving (Show)
+data AdjRooms = AdjRooms !Room !Room !Room
 
 data Game = Game
-  { _player :: {-# UNPACK #-} !Player
-  , _wumpus :: {-# UNPACK #-} !Wumpus
-  , pit1    :: {-# UNPACK #-} !Room
-  , pit2    :: {-# UNPACK #-} !Room
-  , bat1    :: {-# UNPACK #-} !Room
-  , bat2    :: {-# UNPACK #-} !Room
+  { _player :: !Player
+  , _wumpus :: !Wumpus
+  , pit1    :: !Room
+  , pit2    :: !Room
+  , bat1    :: !Room
+  , bat2    :: !Room
   } deriving (Show, Eq)
 
 data Player = Player
-  { _playerRoom :: {-# UNPACK #-} !Room
-  , _arrowCount :: {-# UNPACK #-} !Int
+  { _playerRoom :: !Room
+  , _arrowCount :: !Int
   } deriving (Show, Eq)
 
 data Wumpus = Wumpus
-  { _wumpusRoom :: {-# UNPACK #-} !Room
+  { _wumpusRoom :: !Room
   , _isSleeping :: !Bool
   } deriving (Show, Eq)
 
@@ -131,8 +127,8 @@ shoot (room:rooms) game
 
 getRandAdjRoomToWumpus :: (R.RandomGen g) => Game -> R.Rand g Room
 getRandAdjRoomToWumpus game = do
-  let adjRooms = getAdjRoomsTo' $ (_wumpusRoom . _wumpus) game
-  shuffledRooms <- shuffleM adjRooms
+  let AdjRooms a b c = getAdjRoomsTo $ (_wumpusRoom . _wumpus) game
+  shuffledRooms <- shuffleM [a, b, c]
   return $ head shuffledRooms
 
 -- | The game map in Hunt the Wumpus is laid out as a dodecahedron. The vertices of
@@ -141,29 +137,29 @@ getRandAdjRoomToWumpus game = do
 -- Here we have a vector of adjacent rooms where the element at an index contains
 -- the adjacent rooms to the Room = index + 1. I just hard coded some valid room
 -- values here for ease.
-gameMap :: V.Vector AdjacentRooms
+gameMap :: V.Vector AdjRooms
 gameMap =
   V.fromList
-    [ AdjacentRooms 2  5  8
-    , AdjacentRooms 1  3  10
-    , AdjacentRooms 2  4  12
-    , AdjacentRooms 3  5  14
-    , AdjacentRooms 1  4  6
-    , AdjacentRooms 5  7  15
-    , AdjacentRooms 6  8  17
-    , AdjacentRooms 1  7  9
-    , AdjacentRooms 8  10 18
-    , AdjacentRooms 2  9  11
-    , AdjacentRooms 10 12 19
-    , AdjacentRooms 3  11 13
-    , AdjacentRooms 12 14 20
-    , AdjacentRooms 4  13 15
-    , AdjacentRooms 6  14 16
-    , AdjacentRooms 15 17 20
-    , AdjacentRooms 7  16 18
-    , AdjacentRooms 9  17 19
-    , AdjacentRooms 11 18 20
-    , AdjacentRooms 13 16 19
+    [ AdjRooms 2  5  8
+    , AdjRooms 1  3  10
+    , AdjRooms 2  4  12
+    , AdjRooms 3  5  14
+    , AdjRooms 1  4  6
+    , AdjRooms 5  7  15
+    , AdjRooms 6  8  17
+    , AdjRooms 1  7  9
+    , AdjRooms 8  10 18
+    , AdjRooms 2  9  11
+    , AdjRooms 10 12 19
+    , AdjRooms 3  11 13
+    , AdjRooms 12 14 20
+    , AdjRooms 4  13 15
+    , AdjRooms 6  14 16
+    , AdjRooms 15 17 20
+    , AdjRooms 7  16 18
+    , AdjRooms 9  17 19
+    , AdjRooms 11 18 20
+    , AdjRooms 13 16 19
     ]
 
 minRoom :: Room
@@ -172,7 +168,7 @@ minRoom = 1;
 maxRoom :: Room
 maxRoom = 20;
 
-getCurrentAdjRooms :: Game -> AdjacentRooms
+getCurrentAdjRooms :: Game -> AdjRooms
 getCurrentAdjRooms = getAdjRoomsTo . getPlayerRoom
 
 getPlayerRoom :: Game -> Room
@@ -196,15 +192,12 @@ wumpusIsSleeping :: Game -> Bool
 wumpusIsSleeping = _isSleeping . _wumpus
 
 isAdjacent :: Room -> Room -> Bool
-isAdjacent a b = isInBounds a && isInBounds b && isAdj a b
+isAdjacent r1 r2 = isInBounds r1 && isInBounds r2 && isAdj r1 r2
   where
     isInBounds x = x >= minRoom && x <= maxRoom
-    isAdj x y = elem y $ getAdjRoomsTo' x
+    isAdj x y =
+      let AdjRooms a b c = getAdjRoomsTo x
+       in a == y || b == y || c == y
 
-getAdjRoomsTo :: Room -> AdjacentRooms
+getAdjRoomsTo :: Room -> AdjRooms
 getAdjRoomsTo r = gameMap V.! (r - 1)
-
-getAdjRoomsTo' :: Room -> [Room]
-getAdjRoomsTo' r =
-  let rs = gameMap V.! (r - 1)
-   in [firstRoom rs, secondRoom rs, thirdRoom rs]

@@ -40,17 +40,9 @@ loopGame g = do
           loopGame $ movePlayer room game
 
 printAdjacentRooms :: Game -> IO ()
-printAdjacentRooms game = do
-  let adjRooms = getCurrentAdjRooms game
-  putStrLn $
-    concat
-      [ "Tunnel leads to "
-      , (show . firstRoom) adjRooms
-      , " "
-      , (show . secondRoom) adjRooms
-      , " "
-      , (show . thirdRoom) adjRooms
-      ]
+printAdjacentRooms game =
+  let AdjRooms a b c = getCurrentAdjRooms game
+   in putStrLn $ concat ["Tunnel leads to ", show a, " ", show b, " ", show c]
 
 promptForCommand :: IO Command
 promptForCommand = do
