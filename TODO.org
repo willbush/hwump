@@ -1,4 +1,4 @@
-* TODO Hunt the Wumpus TODOs [18/19]
+* TODO Hunt the Wumpus TODOs [19/20]
 
 - [X] figure out input architecture [1/1]
 
@@ -56,6 +56,8 @@
 - [X] complete player shooting
 
 - [X] Hook up shooting to Main
+
+- [X] print game state if "cheating" is passed as an argument
 
 - [ ] print warnings for entities in adjacent rooms
 

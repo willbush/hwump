@@ -2,54 +2,65 @@
 
 module Main where
 
+import           Control.Monad        (when)
 import qualified Control.Monad.Random as R
 import qualified Data.ByteString      as B
 import           Data.Maybe           (catMaybes)
 import qualified Data.Text            as T
 import qualified Data.Text.Encoding   as E
 import           Game
+import           System.Environment   (getArgs)
 import           Text.Read            (readMaybe)
 
 data Command = Shoot | Move | Quit
 
 main :: IO ()
-main = R.evalRandIO mkGame >>= loopGame
+main = do
+  args <- getArgs
+  R.evalRandIO mkGame >>= loopGame (isCheatingFlag args)
 
-loopGame :: Game -> IO ()
-loopGame g = do
-  game <- R.evalRandIO $ updateWumpus g
-  print game
-  case eval game of
-    GameOver FellInPit -> putStrLn "YYYIIIIEEEE... fell in a pit!"
-    GameOver DeathByWumpus -> putStrLn "Tsk tsk tsk - wumpus got you!"
-    GameOver OutOfArrows -> putStrLn "You've run out of arrows!"
-    BumpWumpus -> do
-      putStrLn "...Oops! Bumped a wumpus!"
-      loopGame $ awakenWumpus game
-    SuperBatSnatch -> do
-      newRoom <- R.evalRandIO $ R.getRandomR (minRoom, maxRoom)
-      putStrLn "Zap--Super Bat snatch! Elsewhereville for you!"
-      loopGame $ movePlayer newRoom game
-    GameOn -> do
-      printAdjacentRooms game
-      command <- promptForCommand
-      case command of
-        Quit -> return ()
-        Move -> do
-          room <- promptForRoom $ getPlayerRoom game
-          loopGame $ movePlayer room game
-        Shoot -> do
-          rooms <- promptForRoomsToShoot
-          ArrowTrip maybeHit traversed <- R.evalRandIO $ shoot rooms game
-          mapM_ print traversed
-          case maybeHit of
-            HitWumpus ->
-              putStrLn
-                "Aha! You got the Wumpus!\nHee hee hee - the Wumpus'll getcha next time!!"
-            HitPlayer -> putStrLn "Ouch! Arrow got you!"
-            Miss -> do
-              putStrLn "Miss"
-              loopGame $ decrementArrowCount game
+isCheatingFlag :: [String] -> Bool
+isCheatingFlag (arg:_) = arg == "cheating"
+isCheatingFlag _ = False
+
+loopGame :: Bool -> Game -> IO ()
+loopGame isCheating = go
+  where
+    go g = do
+      game <- R.evalRandIO $ updateWumpus g
+      when isCheating $ print game
+      case eval game of
+        GameOver FellInPit -> putStrLn "YYYIIIIEEEE... fell in a pit!"
+        GameOver DeathByWumpus -> putStrLn "Tsk tsk tsk - wumpus got you!"
+        GameOver OutOfArrows -> putStrLn "You've run out of arrows!"
+        BumpWumpus -> do
+          putStrLn "...Oops! Bumped a wumpus!"
+          go $ awakenWumpus game
+        SuperBatSnatch -> do
+          newRoom <- R.evalRandIO $ R.getRandomR (minRoom, maxRoom)
+          putStrLn "Zap--Super Bat snatch! Elsewhereville for you!"
+          go $ movePlayer newRoom game
+        GameOn -> do
+          printAdjacentRooms game
+          command <- promptForCommand
+          case command of
+            Quit -> return ()
+            Move -> do
+              room <- promptForRoom $ getPlayerRoom game
+              go $ movePlayer room game
+            Shoot -> do
+              rooms <- promptForRoomsToShoot
+              ArrowTrip maybeHit traversed <- R.evalRandIO $ shoot rooms game
+              mapM_ print traversed
+              case maybeHit of
+                HitWumpus ->
+                  putStrLn $
+                  "Aha! You got the Wumpus!\n" ++
+                  "Hee hee hee - the Wumpus'll getcha next time!!"
+                HitPlayer -> putStrLn "Ouch! Arrow got you!"
+                Miss -> do
+                  putStrLn "Miss"
+                  go $ decrementArrowCount game
 
 printAdjacentRooms :: Game -> IO ()
 printAdjacentRooms game =
@@ -64,7 +75,7 @@ promptForCommand = do
     "S" -> return Shoot
     "M" -> return Move
     "Q" -> return Quit
-    _ -> promptForCommand
+    _   -> promptForCommand
 
 promptForRoom :: Room -> IO Room
 promptForRoom current = do
