@@ -17,7 +17,7 @@ spec = do
       isAdjacent 0 1 `shouldBe` False
       isAdjacent 1 0 `shouldBe` False
 
-    it "returns true if the two given rooms are adjacent" $
+    it "returns true if the two given expectedTraversal are adjacent" $
       isAdjacent 1 2 `shouldBe` True
 
     it "returns true for room number n and n + 1 and n in bounds" $
@@ -50,18 +50,32 @@ spec = do
       eval zeroArrowGame `shouldBe` GameOver OutOfArrows
 
   describe "shoot function" $ do
+    it "can miss when shooting nothing." $ do
+      trip <- R.evalRandIO $ shoot [] gameTemplate
+      trip `shouldBe` ArrowTrip Miss []
+
     it "can miss." $ do
-      shoot [] gameTemplate `shouldBe` Miss []
-      let rooms = [8, 9, 10, 11, 12]
-      shoot rooms gameTemplate `shouldBe` Miss rooms
+      let playerRoom = 8
+          game = movePlayer playerRoom gameTemplate
+          roomsToShoot = [9, 10, 11, 12, 13]
+      trip <- R.evalRandIO $ shoot roomsToShoot game
+      trip `shouldBe` ArrowTrip Miss roomsToShoot
 
-    it "can suicide." $
-      let rooms = [5, 6, 7, 8, 1]
-       in shoot rooms gameTemplate `shouldBe` Suicide rooms
+    it "can hit player." $ do
+      let roomsToShoot = [5, 6, 7, 8, 1]
+      trip <- R.evalRandIO $ shoot roomsToShoot gameTemplate
+      trip `shouldBe` ArrowTrip HitPlayer roomsToShoot
 
-    it "can hit the Wumpus." $
-      let rooms = [2]
-       in shoot rooms gameTemplate `shouldBe` HitWumpus rooms
+    it "can hit the Wumpus." $ do
+      let roomsToShoot = [2]
+      trip <- R.evalRandIO $ shoot roomsToShoot gameTemplate
+      trip `shouldBe` ArrowTrip HitWumpus roomsToShoot
+
+    it "never shoots a too crooked with random traversal." $
+      property randTraveralIsNeverTooCrooked
+
+    it "never creates a disjoint path with random traversal." $
+      property randTraveralIsNeverDisjoint
 
 -- | A simple game template to use in tests.
 gameTemplate :: Game
@@ -96,5 +110,29 @@ moveToPrevRoomNum x =
 -- | A newly created game should never evaluate to a game over state.
 newGameIsNeverGameOver :: Int -> Bool
 newGameIsNeverGameOver n =
-  let evalResult = eval $ R.evalRand makeGame (R.mkStdGen n)
+  let evalResult = eval $ R.evalRand mkGame (R.mkStdGen n)
    in evalResult == GameOn
+
+randTraveralIsNeverTooCrooked :: Int -> Bool
+randTraveralIsNeverTooCrooked n =
+  -- | the first room 20 is not adjacent to the player room 1.
+  let invalidTraversal = [20, 13, 12, 11, 10]
+      ArrowTrip _ traversal =
+        R.evalRand (shoot invalidTraversal gameTemplate) (R.mkStdGen n)
+   in not $ anyTooCrooked traversal
+
+randTraveralIsNeverDisjoint :: Int -> Bool
+randTraveralIsNeverDisjoint n =
+  -- | the first room 20 is not adjacent to the player room 1.
+  let invalidTraversal = [20, 13, 12, 11, 10]
+      ArrowTrip _ traversal =
+        R.evalRand (shoot invalidTraversal gameTemplate) (R.mkStdGen n)
+   in not $ anyDisjoint traversal
+
+anyTooCrooked :: [Room] -> Bool
+anyTooCrooked xs@(a:_:c:_) = a == c || anyTooCrooked (drop 1 xs)
+anyTooCrooked _            = False
+
+anyDisjoint :: [Room] -> Bool
+anyDisjoint xs@(a:b:_) = not (isAdjacent a b) || anyDisjoint (drop 1 xs)
+anyDisjoint _          = False

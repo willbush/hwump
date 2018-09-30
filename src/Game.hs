@@ -7,7 +7,8 @@ module Game
   , AdjRooms(..)
   , EvalResult(..)
   , DeathType(..)
-  , ShootResult(..)
+  , ArrowTrip(..)
+  , MaybeHit(..)
   , Room
   , isAdjacent
   , movePlayer
@@ -16,16 +17,17 @@ module Game
   , awakenWumpus
   , getPlayerRoom
   , getCurrentAdjRooms
-  , makeGame
+  , mkGame
   , maxRoom
   , minRoom
   , eval
-  , update
+  , updateWumpus
   , shoot
   ) where
 
 import           Control.Lens          (makeLenses, set)
 import qualified Control.Monad.Random  as R
+import           Data.List             (delete)
 import qualified Data.Vector           as V
 import           System.Random.Shuffle (shuffleM)
 
@@ -65,10 +67,13 @@ data DeathType
   | OutOfArrows
   deriving (Show, Eq)
 
-data ShootResult
-  = HitWumpus [Room]
-  | Suicide [Room]
-  | Miss [Room]
+data ArrowTrip = ArrowTrip MaybeHit [Room]
+  deriving (Show, Eq)
+
+data MaybeHit
+  = HitWumpus
+  | HitPlayer
+  | Miss
   deriving (Show, Eq)
 
 makeLenses ''Game
@@ -77,8 +82,9 @@ makeLenses ''Player
 
 makeLenses ''Wumpus
 
-makeGame :: (R.RandomGen g) => R.Rand g Game
-makeGame = do
+-- | Make a randomly initialized game with non-overlapping game entities.
+mkGame :: (R.RandomGen g) => R.Rand g Game
+mkGame = do
   shuffledRooms <- shuffleM [minRoom .. maxRoom]
   let randRooms = V.fromList $ take 6 shuffledRooms
   return
@@ -105,64 +111,73 @@ eval game
     wr = (_wumpusRoom . _wumpus) game
     wumpIsSleeping = wumpusIsSleeping game
 
-update :: (R.RandomGen g) => Game -> R.Rand g Game
-update game = do
+updateWumpus :: (R.RandomGen g) => Game -> R.Rand g Game
+updateWumpus game = do
   n <- R.getRandomR (1 :: Int, 4)
   let wumpusFeelsLikeMoving = n > 1
   if not (wumpusIsSleeping game) && wumpusFeelsLikeMoving
     then do
-      r <- getRandAdjRoomToWumpus game
-      return $ moveWumpus r game
+      shuffledRooms <- getShuffledAdjRoomsTo $ (_wumpusRoom . _wumpus) game
+      return $ moveWumpus (head shuffledRooms) game
     else return game
 
-shoot :: [Room] -> Game -> ShootResult
-shoot rooms game = go rooms game []
+-- | This function shoots an arrow from the first room in the given list, which
+-- should be the player's room, through the rest of the valid rooms from left to
+-- right. When an invalid room traversal is encountered the rest of the rooms
+-- are replaced by a valid random traversal. See mkValidTraversal for more info.
+shoot :: (R.RandomGen g) => [Room] -> Game -> R.Rand g ArrowTrip
+shoot rooms game = do
+  validTraversal <- mkValidTraversal (getPlayerRoom game) rooms
+  return $ go validTraversal game []
   where
-    go [] _ acc = Miss $ reverse acc
+    go [] _ acc = ArrowTrip Miss $ reverse acc
     go (r:rs) g acc
-      | r == wr = HitWumpus $ reverse $ r : acc
-      | r == pr = Suicide $ reverse $ r : acc
+      | r == wr = ArrowTrip HitWumpus $ reverse $ r : acc
+      | r == pr = ArrowTrip HitPlayer $ reverse $ r : acc
       | otherwise = go rs g $ r : acc
       where
         wr = (_wumpusRoom . _wumpus) game
         pr = getPlayerRoom game
 
-getRandAdjRoomToWumpus :: (R.RandomGen g) => Game -> R.Rand g Room
-getRandAdjRoomToWumpus game = do
-  let AdjRooms a b c = getAdjRoomsTo $ (_wumpusRoom . _wumpus) game
-  shuffledRooms <- shuffleM [a, b, c]
-  return $ head shuffledRooms
+-- | This function makes a valid arrow traversal.
+--
+-- A valid arrow traversal has the following properties:
+-- * Each room in the traversal are rooms the arrow travels through.
+-- * A traversal is considered to flow from left to right in the list.
+-- * Each room adjacent in the list is adjacent in the map.
+-- * A traversal is not violate A-B-A "arrow too crooked" restriction. (i.e. The
+--   arrow never goes to an adjacent room and back).
+--
+-- As soon as a non-adjacent room is encountered, when scanning from left to
+-- right, the remaining rooms are disregarded and a random valid traversal
+-- constructed.
+--
+-- Note, the first room to shoot is a special case because if its not adjacent
+-- to the player, then we need to get any random adjacent room. This is the only
+-- case where we don't worry about creating an A-B-A path.
+mkValidTraversal :: (R.RandomGen g) => Room -> [Room] -> R.Rand g [Room]
+mkValidTraversal _ [] = return []
+mkValidTraversal playerR roomsToShoot@(r:rs) =
+  if isAdjacent playerR r
+    then go (playerR : roomsToShoot) False [r]
+    else do
+      shuffledRooms <- getShuffledAdjRoomsTo playerR
+      let fstValidRoom = head shuffledRooms
+      go (playerR : fstValidRoom : rs) True [fstValidRoom]
+  where
+    go (previous:current:next:rooms) isDisjoint acc =
+      if isDisjoint || not (isAdjacent current next)
+        then do
+          shuffledRooms <- getShuffledAdjRoomsTo current
+          let randNext = head $ delete previous shuffledRooms
+          go (current : randNext : rooms) True (randNext : acc)
+        else go (current : next : rooms) False (next : acc)
+    go _ _ acc = return $ reverse acc
 
--- | The game map in Hunt the Wumpus is laid out as a dodecahedron. The vertices of
--- the dodecahedron are considered rooms, and each room has 3 adjacent rooms. A
--- room is adjacent if it has a line segment directly from one vertex to another.
--- Here we have a vector of adjacent rooms where the element at an index contains
--- the adjacent rooms to the Room = index + 1. I just hard coded some valid room
--- values here for ease.
-gameMap :: V.Vector AdjRooms
-gameMap =
-  V.fromList
-    [ AdjRooms 2  5  8
-    , AdjRooms 1  3  10
-    , AdjRooms 2  4  12
-    , AdjRooms 3  5  14
-    , AdjRooms 1  4  6
-    , AdjRooms 5  7  15
-    , AdjRooms 6  8  17
-    , AdjRooms 1  7  9
-    , AdjRooms 8  10 18
-    , AdjRooms 2  9  11
-    , AdjRooms 10 12 19
-    , AdjRooms 3  11 13
-    , AdjRooms 12 14 20
-    , AdjRooms 4  13 15
-    , AdjRooms 6  14 16
-    , AdjRooms 15 17 20
-    , AdjRooms 7  16 18
-    , AdjRooms 9  17 19
-    , AdjRooms 11 18 20
-    , AdjRooms 13 16 19
-    ]
+getShuffledAdjRoomsTo :: (R.RandomGen g) => Room -> R.Rand g [Room]
+getShuffledAdjRoomsTo room =
+  let AdjRooms a b c = getAdjRoomsTo room
+   in shuffleM [a, b, c]
 
 minRoom :: Room
 minRoom = 1;
@@ -203,3 +218,34 @@ isAdjacent r1 r2 = isInBounds r1 && isInBounds r2 && isAdj r1 r2
 
 getAdjRoomsTo :: Room -> AdjRooms
 getAdjRoomsTo r = gameMap V.! (r - 1)
+
+-- | The game map in Hunt the Wumpus is laid out as a dodecahedron. The vertices of
+-- the dodecahedron are considered rooms, and each room has 3 adjacent rooms. A
+-- room is adjacent if it has a line segment directly from one vertex to another.
+-- Here we have a vector of adjacent rooms where the element at an index contains
+-- the adjacent rooms to the Room = index + 1. I just hard coded some valid room
+-- values here for ease.
+gameMap :: V.Vector AdjRooms
+gameMap =
+  V.fromList
+    [ AdjRooms 2  5  8
+    , AdjRooms 1  3  10
+    , AdjRooms 2  4  12
+    , AdjRooms 3  5  14
+    , AdjRooms 1  4  6
+    , AdjRooms 5  7  15
+    , AdjRooms 6  8  17
+    , AdjRooms 1  7  9
+    , AdjRooms 8  10 18
+    , AdjRooms 2  9  11
+    , AdjRooms 10 12 19
+    , AdjRooms 3  11 13
+    , AdjRooms 12 14 20
+    , AdjRooms 4  13 15
+    , AdjRooms 6  14 16
+    , AdjRooms 15 17 20
+    , AdjRooms 7  16 18
+    , AdjRooms 9  17 19
+    , AdjRooms 11 18 20
+    , AdjRooms 13 16 19
+    ]

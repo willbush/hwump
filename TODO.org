@@ -1,4 +1,4 @@
-* Hunt the Wumpus TODOs [16/18]
+* TODO Hunt the Wumpus TODOs [17/19]
 
 - [X] figure out input architecture [1/1]
 
@@ -53,7 +53,9 @@
 
 - [X] return traversed rooms when shooting
   
-- [ ] complete player shooting
+- [X] complete player shooting
+
+- [ ] Hook up shooting to Main
 
 - [ ] print warnings for entities in adjacent rooms
 

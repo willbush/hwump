@@ -12,11 +12,11 @@ import           Text.Read            (readMaybe)
 data Command = Shoot | Move | Quit
 
 main :: IO ()
-main = R.evalRandIO makeGame >>= loopGame
+main = R.evalRandIO mkGame >>= loopGame
 
 loopGame :: Game -> IO ()
 loopGame g = do
-  game <- R.evalRandIO $ update g
+  game <- R.evalRandIO $ updateWumpus g
   print game
   case eval game of
     GameOver FellInPit -> putStrLn "YYYIIIIEEEE... fell in a pit!"
