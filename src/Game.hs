@@ -1,28 +1,29 @@
 {-# LANGUAGE TemplateHaskell #-}
 
 module Game
-  ( Game(..)
-  , Player(..)
-  , Wumpus(..)
-  , AdjRooms(..)
-  , EvalResult(..)
-  , DeathType(..)
+  ( AdjRooms(..)
   , ArrowTrip(..)
+  , DeathType(..)
+  , EvalResult(..)
+  , Game(..)
   , MaybeHit(..)
+  , Player(..)
   , Room
-  , isAdjacent
-  , movePlayer
-  , decrementArrowCount
-  , moveWumpus
+  , Wumpus(..)
+  , anyTooCrooked
   , awakenWumpus
-  , getPlayerRoom
+  , decrementArrowCount
+  , eval
   , getCurrentAdjRooms
-  , mkGame
+  , getPlayerRoom
+  , isAdjacent
   , maxRoom
   , minRoom
-  , eval
-  , updateWumpus
+  , mkGame
+  , movePlayer
+  , moveWumpus
   , shoot
+  , updateWumpus
   ) where
 
 import           Control.Lens          (makeLenses, set)
@@ -121,35 +122,35 @@ updateWumpus game = do
       return $ moveWumpus (head shuffledRooms) game
     else return game
 
--- | This function shoots an arrow from the first room in the given list, which
--- should be the player's room, through the rest of the valid rooms from left to
--- right. When an invalid room traversal is encountered the rest of the rooms
--- are replaced by a valid random traversal. See mkValidTraversal for more info.
+-- | This function shoots an arrow from the first room in the given list through
+-- the rest of the valid rooms from left to right. When an invalid room
+-- traversal is encountered the rest of the rooms are replaced by a valid random
+-- traversal. See mkValidTraversal for more info.
 shoot :: (R.RandomGen g) => [Room] -> Game -> R.Rand g ArrowTrip
 shoot rooms game = do
   validTraversal <- mkValidTraversal (getPlayerRoom game) rooms
   return $ go validTraversal game []
   where
+    wr = (_wumpusRoom . _wumpus) game
+    pr = getPlayerRoom game
     go [] _ acc = ArrowTrip Miss $ reverse acc
     go (r:rs) g acc
       | r == wr = ArrowTrip HitWumpus $ reverse $ r : acc
       | r == pr = ArrowTrip HitPlayer $ reverse $ r : acc
       | otherwise = go rs g $ r : acc
-      where
-        wr = (_wumpusRoom . _wumpus) game
-        pr = getPlayerRoom game
 
 -- | This function makes a valid arrow traversal.
 --
--- This function assumes the given list of rooms does not contain a A-B-A path,
--- which should be prevented when the user is inputing the rooms.
---
 -- A valid arrow traversal has the following properties:
+--
 -- * Each room in the traversal are rooms the arrow travels through.
 -- * A traversal is considered to flow from left to right in the list.
 -- * Each room adjacent in the list is adjacent in the map.
--- * A traversal is not violate A-B-A "arrow too crooked" restriction. (i.e. The
---   arrow never goes to an adjacent room and back).
+-- * A traversal does not violate A-B-A "arrow too crooked" restriction. (i.e.
+--   The arrow never goes to an adjacent room and back). This function assumes
+--   the given list of rooms does not contain a A-B-A path, which should be
+--   prevented when the user is inputing the rooms. However, when adding
+--   randomly traversed rooms this function will not violate A-B-A.
 --
 -- As soon as a non-adjacent room is encountered, when scanning from left to
 -- right, the remaining rooms are disregarded and a random valid traversal
@@ -157,7 +158,7 @@ shoot rooms game = do
 --
 -- Note, the first room to shoot is a special case because if its not adjacent
 -- to the player, then we need to get any random adjacent room. This is the only
--- case where we don't worry about creating an A-B-A path.
+-- case where we don't have to worry about creating an A-B-A path.
 mkValidTraversal :: (R.RandomGen g) => Room -> [Room] -> R.Rand g [Room]
 mkValidTraversal _ [] = return []
 mkValidTraversal playerR roomsToShoot@(r:rs) =
@@ -215,6 +216,10 @@ isAdjacent r1 r2 = isInBounds r1 && isInBounds r2 && isAdj r1 r2
 
 getAdjRoomsTo :: Room -> AdjRooms
 getAdjRoomsTo r = gameMap V.! (r - 1)
+
+anyTooCrooked :: [Room] -> Bool
+anyTooCrooked rs@(a:_:c:_) = a == c || anyTooCrooked (drop 1 rs)
+anyTooCrooked _            = False
 
 minRoom :: Room
 minRoom = 1;

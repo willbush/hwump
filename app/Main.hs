@@ -4,6 +4,7 @@ module Main where
 
 import qualified Control.Monad.Random as R
 import qualified Data.ByteString      as B
+import           Data.Maybe           (catMaybes)
 import qualified Data.Text            as T
 import qualified Data.Text.Encoding   as E
 import           Game
@@ -34,10 +35,21 @@ loopGame g = do
       command <- promptForCommand
       case command of
         Quit -> return ()
-        Shoot -> return ()
         Move -> do
           room <- promptForRoom $ getPlayerRoom game
           loopGame $ movePlayer room game
+        Shoot -> do
+          rooms <- promptForRoomsToShoot
+          ArrowTrip maybeHit traversed <- R.evalRandIO $ shoot rooms game
+          mapM_ print traversed
+          case maybeHit of
+            HitWumpus ->
+              putStrLn
+                "Aha! You got the Wumpus!\nHee hee hee - the Wumpus'll getcha next time!!"
+            HitPlayer -> putStrLn "Ouch! Arrow got you!"
+            Miss -> do
+              putStrLn "Miss"
+              loopGame $ decrementArrowCount game
 
 printAdjacentRooms :: Game -> IO ()
 printAdjacentRooms game =
@@ -52,7 +64,7 @@ promptForCommand = do
     "S" -> return Shoot
     "M" -> return Move
     "Q" -> return Quit
-    _   -> promptForCommand
+    _ -> promptForCommand
 
 promptForRoom :: Room -> IO Room
 promptForRoom current = do
@@ -69,3 +81,20 @@ readAdjacentTo current line =
   case readMaybe line of
     Just next | isAdjacent current next -> Just next
     _                                   -> Nothing
+
+promptForRoomsToShoot :: IO [Room]
+promptForRoomsToShoot = do
+  putStrLn "Enter up to 5 space separated rooms to shoot: "
+  line <- getLine
+  let maybeRooms = map readMaybe $ words line
+  if Nothing `elem` maybeRooms
+    then do
+      putStrLn "The given list of rooms contains one or more invalid numbers."
+      promptForRoomsToShoot
+    else do
+      let rooms = catMaybes maybeRooms
+      if anyTooCrooked rooms
+        then do
+          putStrLn "Arrows aren't that crooked - try another room sequence!"
+          promptForRoomsToShoot
+        else return rooms

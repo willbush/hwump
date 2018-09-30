@@ -129,10 +129,6 @@ getRandTraversal seed =
 invalidTraversal :: [Room]
 invalidTraversal = [20, 13, 12, 11, 10]
 
-anyTooCrooked :: [Room] -> Bool
-anyTooCrooked xs@(a:_:c:_) = a == c || anyTooCrooked (drop 1 xs)
-anyTooCrooked _            = False
-
 anyDisjoint :: [Room] -> Bool
-anyDisjoint xs@(a:b:_) = not (isAdjacent a b) || anyDisjoint (drop 1 xs)
+anyDisjoint rs@(a:b:_) = not (isAdjacent a b) || anyDisjoint (drop 1 rs)
 anyDisjoint _          = False
