@@ -141,6 +141,9 @@ shoot rooms game = do
 
 -- | This function makes a valid arrow traversal.
 --
+-- This function assumes the given list of rooms does not contain a A-B-A path,
+-- which should be prevented when the user is inputing the rooms.
+--
 -- A valid arrow traversal has the following properties:
 -- * Each room in the traversal are rooms the arrow travels through.
 -- * A traversal is considered to flow from left to right in the list.
@@ -179,12 +182,6 @@ getShuffledAdjRoomsTo room =
   let AdjRooms a b c = getAdjRoomsTo room
    in shuffleM [a, b, c]
 
-minRoom :: Room
-minRoom = 1;
-
-maxRoom :: Room
-maxRoom = 20;
-
 getCurrentAdjRooms :: Game -> AdjRooms
 getCurrentAdjRooms = getAdjRoomsTo . getPlayerRoom
 
@@ -218,6 +215,12 @@ isAdjacent r1 r2 = isInBounds r1 && isInBounds r2 && isAdj r1 r2
 
 getAdjRoomsTo :: Room -> AdjRooms
 getAdjRoomsTo r = gameMap V.! (r - 1)
+
+minRoom :: Room
+minRoom = 1;
+
+maxRoom :: Room
+maxRoom = 20;
 
 -- | The game map in Hunt the Wumpus is laid out as a dodecahedron. The vertices of
 -- the dodecahedron are considered rooms, and each room has 3 adjacent rooms. A

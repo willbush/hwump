@@ -10,7 +10,6 @@ import           Test.QuickCheck
 spec :: Spec
 spec = do
   describe "is adjacent" $ do
-
     it "returns false if any given room is out of bounds of the map" $ do
       isAdjacent 20 21 `shouldBe` False
       isAdjacent 21 20 `shouldBe` False
@@ -114,20 +113,21 @@ newGameIsNeverGameOver n =
    in evalResult == GameOn
 
 randTraveralIsNeverTooCrooked :: Int -> Bool
-randTraveralIsNeverTooCrooked n =
-  -- | the first room 20 is not adjacent to the player room 1.
-  let invalidTraversal = [20, 13, 12, 11, 10]
-      ArrowTrip _ traversal =
-        R.evalRand (shoot invalidTraversal gameTemplate) (R.mkStdGen n)
-   in not $ anyTooCrooked traversal
+randTraveralIsNeverTooCrooked seed = not $ anyTooCrooked $ getRandTraversal seed
 
 randTraveralIsNeverDisjoint :: Int -> Bool
-randTraveralIsNeverDisjoint n =
+randTraveralIsNeverDisjoint seed = not $ anyDisjoint $ getRandTraversal seed
+
+getRandTraversal :: Int -> [Room]
+getRandTraversal seed =
+  let (playerRoom, g) = R.randomR (1 :: Room, 20) $ R.mkStdGen seed
+      game = movePlayer playerRoom gameTemplate
+      ArrowTrip _ traversal = R.evalRand (shoot invalidTraversal game) g
+   in traversal
+
   -- | the first room 20 is not adjacent to the player room 1.
-  let invalidTraversal = [20, 13, 12, 11, 10]
-      ArrowTrip _ traversal =
-        R.evalRand (shoot invalidTraversal gameTemplate) (R.mkStdGen n)
-   in not $ anyDisjoint traversal
+invalidTraversal :: [Room]
+invalidTraversal = [20, 13, 12, 11, 10]
 
 anyTooCrooked :: [Room] -> Bool
 anyTooCrooked xs@(a:_:c:_) = a == c || anyTooCrooked (drop 1 xs)
