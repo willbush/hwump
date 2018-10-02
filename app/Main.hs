@@ -21,7 +21,7 @@ main = do
 
 isCheatingFlag :: [String] -> Bool
 isCheatingFlag (arg:_) = arg == "cheating"
-isCheatingFlag _ = False
+isCheatingFlag _       = False
 
 loopGame :: Bool -> Game -> IO ()
 loopGame isCheating = go
@@ -29,38 +29,73 @@ loopGame isCheating = go
     go g = do
       game <- R.evalRandIO $ updateWumpus g
       when isCheating $ print game
-      case eval game of
-        GameOver FellInPit -> putStrLn "YYYIIIIEEEE... fell in a pit!"
-        GameOver DeathByWumpus -> putStrLn "Tsk tsk tsk - wumpus got you!"
-        GameOver OutOfArrows -> putStrLn "You've run out of arrows!"
-        BumpWumpus -> do
-          putStrLn "...Oops! Bumped a wumpus!"
-          go $ awakenWumpus game
-        SuperBatSnatch -> do
-          newRoom <- R.evalRandIO $ R.getRandomR (minRoom, maxRoom)
-          putStrLn "Zap--Super Bat snatch! Elsewhereville for you!"
-          go $ movePlayer newRoom game
-        GameOn -> do
-          printAdjacentRooms game
-          command <- promptForCommand
-          case command of
-            Quit -> return ()
-            Move -> do
-              room <- promptForRoom $ getPlayerRoom game
-              go $ movePlayer room game
-            Shoot -> do
-              rooms <- promptForRoomsToShoot
-              ArrowTrip maybeHit traversed <- R.evalRandIO $ shoot rooms game
-              mapM_ print traversed
-              case maybeHit of
-                HitWumpus ->
-                  putStrLn $
-                  "Aha! You got the Wumpus!\n" ++
-                  "Hee hee hee - the Wumpus'll getcha next time!!"
-                HitPlayer -> putStrLn "Ouch! Arrow got you!"
-                Miss -> do
-                  putStrLn "Miss"
-                  go $ decrementArrowCount game
+      printWarnings game
+      putStrLn $ "You are in room " ++ show (getPlayerRoom game)
+      maybeGame <- update game
+      case maybeGame of
+        Nothing -> return ()
+        Just updatedGame -> go updatedGame
+
+update :: Game -> IO (Maybe Game)
+update game =
+  case eval game of
+    GameOver FellInPit -> do
+      putStrLn "YYYIIIIEEEE... fell in a pit!"
+      return Nothing
+    GameOver DeathByWumpus -> do
+      putStrLn "Tsk tsk tsk - wumpus got you!"
+      return Nothing
+    GameOver OutOfArrows -> do
+      putStrLn "You've run out of arrows!"
+      return Nothing
+    BumpWumpus -> do
+      putStrLn "...Oops! Bumped a wumpus!"
+      return $ Just (awakenWumpus game)
+    SuperBatSnatch -> do
+      newRoom <- R.evalRandIO $ R.getRandomR (minRoom, maxRoom)
+      putStrLn "Zap--Super Bat snatch! Elsewhereville for you!"
+      return $ Just (movePlayer newRoom game)
+    GameOn -> do
+      printAdjacentRooms game
+      command <- promptForCommand
+      processCommand game command
+
+processCommand :: Game -> Command -> IO (Maybe Game)
+processCommand game command =
+  case command of
+    Quit -> return Nothing
+    Move -> do
+      room <- promptForRoom $ getPlayerRoom game
+      return $ Just (movePlayer room game)
+    Shoot -> do
+      rooms <- promptForRoomsToShoot
+      ArrowTrip maybeHit traversed <- R.evalRandIO $ shoot rooms game
+      mapM_ print traversed
+      case maybeHit of
+        HitWumpus -> do
+          putStrLn $
+            "Aha! You got the Wumpus!\n" ++
+            "Hee hee hee - the Wumpus'll getcha next time!!"
+          return Nothing
+        HitPlayer -> putStrLn "Ouch! Arrow got you!" >> return Nothing
+        Miss -> do
+          putStrLn "Miss"
+          return $ Just $ (awakenWumpIfFirstArrow . decrementArrowCount) game
+
+printWarnings :: Game -> IO ()
+printWarnings game = do
+  let rs = getCurrentAdjRooms game
+      wr = getWumpusRoom game
+      b1 = bat1 game
+      b2 = bat2 game
+      p1 = pit1 game
+      p2 = pit2 game
+  when (isNear b1 rs || isNear b2 rs) $ putStrLn "Bats nearby!"
+  when (isNear p1 rs || isNear p2 rs) $ putStrLn "I feel a draft!"
+  when (isNear wr rs) $ putStrLn "I Smell a Wumpus."
+
+isNear :: Room -> AdjRooms -> Bool
+isNear r (AdjRooms a b c) = a == r || b == r || c == r
 
 printAdjacentRooms :: Game -> IO ()
 printAdjacentRooms game =

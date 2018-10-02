@@ -11,11 +11,13 @@ module Game
   , Room
   , Wumpus(..)
   , anyTooCrooked
+  , awakenWumpIfFirstArrow
   , awakenWumpus
   , decrementArrowCount
   , eval
   , getCurrentAdjRooms
   , getPlayerRoom
+  , getWumpusRoom
   , isAdjacent
   , maxRoom
   , minRoom
@@ -83,6 +85,9 @@ makeLenses ''Player
 
 makeLenses ''Wumpus
 
+initialArrowCount :: Int
+initialArrowCount = 5
+
 -- | Make a randomly initialized game with non-overlapping game entities.
 mkGame :: (R.RandomGen g) => R.Rand g Game
 mkGame = do
@@ -90,7 +95,7 @@ mkGame = do
   let randRooms = V.fromList $ take 6 shuffledRooms
   return
     Game
-      { _player = Player {_playerRoom = randRooms V.! 0, _arrowCount = 5}
+      { _player = Player {_playerRoom = randRooms V.! 0, _arrowCount = initialArrowCount}
       , _wumpus = Wumpus {_wumpusRoom = randRooms V.! 1, _isSleeping = True}
       , pit1 = randRooms V.! 2
       , pit2 = randRooms V.! 3
@@ -109,7 +114,7 @@ eval game
   | otherwise                          = GameOn
   where
     pr = getPlayerRoom game
-    wr = (_wumpusRoom . _wumpus) game
+    wr = getWumpusRoom game
     wumpIsSleeping = wumpusIsSleeping game
 
 updateWumpus :: (R.RandomGen g) => Game -> R.Rand g Game
@@ -118,7 +123,7 @@ updateWumpus game = do
   let wumpusFeelsLikeMoving = n > 1
   if not (wumpusIsSleeping game) && wumpusFeelsLikeMoving
     then do
-      shuffledRooms <- getShuffledAdjRoomsTo $ (_wumpusRoom . _wumpus) game
+      shuffledRooms <- getShuffledAdjRoomsTo $ getWumpusRoom game
       return $ moveWumpus (head shuffledRooms) game
     else return game
 
@@ -131,7 +136,7 @@ shoot rooms game = do
   validTraversal <- mkValidTraversal (getPlayerRoom game) rooms
   return $ go validTraversal game []
   where
-    wr = (_wumpusRoom . _wumpus) game
+    wr = getWumpusRoom game
     pr = getPlayerRoom game
     go [] _ acc = ArrowTrip Miss $ reverse acc
     go (r:rs) g acc
@@ -189,6 +194,9 @@ getCurrentAdjRooms = getAdjRoomsTo . getPlayerRoom
 getPlayerRoom :: Game -> Room
 getPlayerRoom = _playerRoom . _player
 
+getWumpusRoom :: Game -> Room
+getWumpusRoom = _wumpusRoom . _wumpus
+
 movePlayer :: Room -> Game -> Game
 movePlayer = set (player . playerRoom)
 
@@ -196,6 +204,12 @@ decrementArrowCount :: Game -> Game
 decrementArrowCount game =
   let current = (_arrowCount . _player) game
    in set (player . arrowCount) (current - 1) game
+
+awakenWumpIfFirstArrow :: Game -> Game
+awakenWumpIfFirstArrow game =
+  if (_arrowCount . _player) game < initialArrowCount
+    then awakenWumpus game
+    else game
 
 moveWumpus :: Room -> Game -> Game
 moveWumpus = set (wumpus . wumpusRoom)
