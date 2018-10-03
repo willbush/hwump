@@ -1,4 +1,4 @@
-* TODO Hunt the Wumpus TODOs [20/21]
+* TODO Hunt the Wumpus TODOs [21/21]
 
 - [X] figure out input architecture [1/1]
 
@@ -60,6 +60,4 @@
 - [X] print game state if "cheating" is passed as an argument
 
 - [X] print warnings for entities in adjacent rooms
-
-- [ ] fix to not print game state before game over message.
 

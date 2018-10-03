@@ -21,7 +21,7 @@ main = do
   R.evalRandIO mkGame >>= loopGame (isCheatingFlag args)
 
 isCheatingFlag :: [String] -> Bool
-isCheatingFlag (arg:_) = arg == "cheating"
+isCheatingFlag (arg:_) = arg == "cheat"
 isCheatingFlag _       = False
 
 loopGame :: Bool -> Game -> IO ()

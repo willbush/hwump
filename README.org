@@ -1,4 +1,64 @@
 * hwump
   
-  This is a toy project I'm working on to learn haskell. Currently, it's under
-  development.
+  This is an implementation of Gregory Yob's [Hunt the
+  Wumpus](https://en.wikipedia.org/wiki/Hunt_the_Wumpus) text based 1972 game. I
+  made this to learn some Haskell.
+
+** Building and Running
+
+   1. clone the repo
+   2. install [[https://docs.haskellstack.org/en/stable/README/][stack]] 
+   3. cd into the directory of the repo and ~stack build~ and ~stack exec
+      hwump-exe~
+
+** How to Play
+
+   The game has 20 rooms which form a dodecahedron. Rooms are numbered from 1 to
+   20 and each room is connected to 3 other rooms.
+
+   The game has 3 types hazards which are assigned to random, yet
+   non-overlapping room numbers:
+
+*** 2 bottomless pits
+    
+    - These are static hazards that do not move.
+    - The player falls to their death when entered.
+    - In the original game the Wumpus can go in these rooms because it has
+      "suckers" on its feet. However, I the way I implemented it has the Wumpus
+      avoiding going into rooms with Bottomless pits.
+
+*** 2 super bats
+    
+    - These are static hazards that do not move.
+    - They snatch the player to another random room when entered.
+    - keeps snatching the player until snatched to a non-bat room.
+    - The Wumpus can go into this room, but won't be picked up because "it's too
+      heavy!"
+
+*** 1 Wumpus
+    
+    - The Wumups is the monster you have to slay to win the game.
+    - The Wumpus is immobile when the game starts since it is asleep.
+    - Shooting an arrow on the map or entering the room of the wumpus will wake
+      up the wumpus.
+    - When awake it has a 75% chance of moving per turn.
+    - The wumpus also has a 75% chance of moving out of the room when you "bump
+      it" or first enter its room when it is asleep. Think of this as a fight or
+      flight response. If the Wumpus stays to fight, then you lose.
+
+  You as the player:
+
+  - navigate the map in a sort of fog of war. You can only see the 3 adjacent
+    rooms that you can move to, but you cannot see what they contain
+  - gain information about the map's layout via clues from adjacent rooms. These
+    clues come in the form of warnings. When a hazard is adjacent to your room
+    it will print its warning.
+  - have a bow with 5 magical crooked arrows that can navigate the crooked halls
+    of the cave.
+  - If you run out of arrows, then game over.
+
+** Cheat Mode
+
+   I have enabled a cheat mode that displays where everything on the map is and
+   where the Wumpus moves everything it moves. Just pass the argument "cheat" to
+   the game (e.g. ~stack exec hwump-exe -- cheat~.
