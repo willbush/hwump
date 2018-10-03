@@ -5,6 +5,7 @@ module Main where
 import           Control.Monad        (when)
 import qualified Control.Monad.Random as R
 import qualified Data.ByteString      as B
+import           Data.Foldable        (forM_)
 import           Data.Maybe           (catMaybes)
 import qualified Data.Text            as T
 import qualified Data.Text.Encoding   as E
@@ -30,11 +31,9 @@ loopGame isCheating = go
       game <- R.evalRandIO $ updateWumpus g
       when isCheating $ print game
       printWarnings game
-      putStrLn $ "You are in room " ++ show (getPlayerRoom game)
+      putStrLn $ "You are in room " ++ show (_player game)
       maybeGame <- update game
-      case maybeGame of
-        Nothing -> return ()
-        Just updatedGame -> go updatedGame
+      forM_ maybeGame go
 
 update :: Game -> IO (Maybe Game)
 update game =
@@ -65,7 +64,7 @@ processCommand game command =
   case command of
     Quit -> return Nothing
     Move -> do
-      room <- promptForRoom $ getPlayerRoom game
+      room <- promptForRoom $ _player game
       return $ Just (movePlayer room game)
     Shoot -> do
       rooms <- promptForRoomsToShoot
@@ -85,7 +84,7 @@ processCommand game command =
 printWarnings :: Game -> IO ()
 printWarnings game = do
   let rs = getCurrentAdjRooms game
-      wr = getWumpusRoom game
+      wr = _wumpus game
       b1 = bat1 game
       b2 = bat2 game
       p1 = pit1 game

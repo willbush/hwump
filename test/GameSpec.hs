@@ -35,7 +35,7 @@ spec = do
       eval game `shouldBe` GameOver FellInPit
 
     it "returns game over if the player runs into the awake wumpus" $ do
-      let wumpusRoom = getWumpusRoom gameTemplate
+      let wumpusRoom = _wumpus gameTemplate
           game = movePlayer wumpusRoom $ awakenWumpus gameTemplate
       eval game `shouldBe` GameOver DeathByWumpus
 
@@ -80,12 +80,14 @@ spec = do
 gameTemplate :: Game
 gameTemplate =
   Game
-    { _player = Player {_playerRoom = 1, _arrowCount = 1}
-    , _wumpus = Wumpus {_wumpusRoom = 2, _isSleeping = True}
+    { _player = 1
+    , _wumpus = 2
     , pit1 = 3
     , pit2 = 4
     , bat1 = 5
     , bat2 = 6
+    , _arrowCount = 1
+    , _wumpIsSleeping = True
     }
 
 -- | The current room and the current room plus one should always be

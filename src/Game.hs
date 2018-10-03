@@ -7,17 +7,13 @@ module Game
   , EvalResult(..)
   , Game(..)
   , MaybeHit(..)
-  , Player(..)
   , Room
-  , Wumpus(..)
   , anyTooCrooked
   , awakenWumpIfFirstArrow
   , awakenWumpus
   , decrementArrowCount
   , eval
   , getCurrentAdjRooms
-  , getPlayerRoom
-  , getWumpusRoom
   , isAdjacent
   , maxRoom
   , minRoom
@@ -39,22 +35,14 @@ type Room = Int
 data AdjRooms = AdjRooms !Room !Room !Room
 
 data Game = Game
-  { _player :: !Player
-  , _wumpus :: !Wumpus
-  , pit1    :: !Room
-  , pit2    :: !Room
-  , bat1    :: !Room
-  , bat2    :: !Room
-  } deriving (Show, Eq)
-
-data Player = Player
-  { _playerRoom :: !Room
-  , _arrowCount :: !Int
-  } deriving (Show, Eq)
-
-data Wumpus = Wumpus
-  { _wumpusRoom :: !Room
-  , _isSleeping :: !Bool
+  { _player         :: !Room
+  , _wumpus         :: !Room
+  , pit1            :: !Room
+  , pit2            :: !Room
+  , bat1            :: !Room
+  , bat2            :: !Room
+  , _arrowCount     :: !Int
+  , _wumpIsSleeping :: !Bool
   } deriving (Show, Eq)
 
 data EvalResult
@@ -81,12 +69,14 @@ data MaybeHit
 
 makeLenses ''Game
 
-makeLenses ''Player
+maxArrows :: Int
+maxArrows = 5
 
-makeLenses ''Wumpus
+minRoom :: Room
+minRoom = 1;
 
-initialArrowCount :: Int
-initialArrowCount = 5
+maxRoom :: Room
+maxRoom = 20;
 
 -- | Make a randomly initialized game with non-overlapping game entities.
 mkGame :: (R.RandomGen g) => R.Rand g Game
@@ -95,35 +85,36 @@ mkGame = do
   let randRooms = V.fromList $ take 6 shuffledRooms
   return
     Game
-      { _player = Player {_playerRoom = randRooms V.! 0, _arrowCount = initialArrowCount}
-      , _wumpus = Wumpus {_wumpusRoom = randRooms V.! 1, _isSleeping = True}
-      , pit1 = randRooms V.! 2
-      , pit2 = randRooms V.! 3
-      , bat1 = randRooms V.! 4
-      , bat2 = randRooms V.! 5
+      { _player = randRooms V.! 0
+      , _wumpus = randRooms V.! 1
+      , pit1    = randRooms V.! 2
+      , pit2    = randRooms V.! 3
+      , bat1    = randRooms V.! 4
+      , bat2    = randRooms V.! 5
+      , _arrowCount = maxArrows
+      , _wumpIsSleeping = True
       }
 
 -- | Evaluates the current state of the game
 eval :: Game -> EvalResult
-eval game
-  | pr == pit1 game || pr == pit2 game = GameOver FellInPit
-  | pr == bat1 game || pr == bat2 game = SuperBatSnatch
-  | not wumpIsSleeping && pr == wr     = GameOver DeathByWumpus
-  | wumpIsSleeping && pr == wr         = BumpWumpus
-  | (_arrowCount . _player) game == 0  = GameOver OutOfArrows
-  | otherwise                          = GameOn
+eval g
+  | pr == pit1 g || pr == pit2 g        = GameOver FellInPit
+  | pr == bat1 g || pr == bat2 g        = SuperBatSnatch
+  | not (_wumpIsSleeping g) && pr == wr = GameOver DeathByWumpus
+  | _wumpIsSleeping g && pr == wr       = BumpWumpus
+  | _arrowCount g == 0                  = GameOver OutOfArrows
+  | otherwise                           = GameOn
   where
-    pr = getPlayerRoom game
-    wr = getWumpusRoom game
-    wumpIsSleeping = wumpusIsSleeping game
+    pr = _player g
+    wr = _wumpus g
 
 updateWumpus :: (R.RandomGen g) => Game -> R.Rand g Game
 updateWumpus game = do
   n <- R.getRandomR (1 :: Int, 4)
   let wumpusFeelsLikeMoving = n > 1
-  if not (wumpusIsSleeping game) && wumpusFeelsLikeMoving
+  if not (_wumpIsSleeping game) && wumpusFeelsLikeMoving
     then do
-      shuffledRooms <- getShuffledAdjRoomsTo $ getWumpusRoom game
+      shuffledRooms <- getShuffledAdjRoomsTo $ _wumpus game
       return $ moveWumpus (head shuffledRooms) game
     else return game
 
@@ -133,11 +124,11 @@ updateWumpus game = do
 -- traversal. See mkValidTraversal for more info.
 shoot :: (R.RandomGen g) => [Room] -> Game -> R.Rand g ArrowTrip
 shoot rooms game = do
-  validTraversal <- mkValidTraversal (getPlayerRoom game) rooms
+  validTraversal <- mkValidTraversal (_player game) rooms
   return $ go validTraversal game []
   where
-    wr = getWumpusRoom game
-    pr = getPlayerRoom game
+    wr = _wumpus game
+    pr = _player game
     go [] _ acc = ArrowTrip Miss $ reverse acc
     go (r:rs) g acc
       | r == wr = ArrowTrip HitWumpus $ reverse $ r : acc
@@ -189,36 +180,25 @@ getShuffledAdjRoomsTo room =
    in shuffleM [a, b, c]
 
 getCurrentAdjRooms :: Game -> AdjRooms
-getCurrentAdjRooms = getAdjRoomsTo . getPlayerRoom
-
-getPlayerRoom :: Game -> Room
-getPlayerRoom = _playerRoom . _player
-
-getWumpusRoom :: Game -> Room
-getWumpusRoom = _wumpusRoom . _wumpus
+getCurrentAdjRooms = getAdjRoomsTo . _player
 
 movePlayer :: Room -> Game -> Game
-movePlayer = set (player . playerRoom)
+movePlayer = set player
 
 decrementArrowCount :: Game -> Game
-decrementArrowCount game =
-  let current = (_arrowCount . _player) game
-   in set (player . arrowCount) (current - 1) game
+decrementArrowCount g = set arrowCount (_arrowCount g - 1) g
 
 awakenWumpIfFirstArrow :: Game -> Game
 awakenWumpIfFirstArrow game =
-  if (_arrowCount . _player) game < initialArrowCount
+  if _arrowCount game < maxArrows
     then awakenWumpus game
     else game
 
 moveWumpus :: Room -> Game -> Game
-moveWumpus = set (wumpus . wumpusRoom)
+moveWumpus = set wumpus
 
 awakenWumpus :: Game -> Game
-awakenWumpus = set (wumpus . isSleeping) False
-
-wumpusIsSleeping :: Game -> Bool
-wumpusIsSleeping = _isSleeping . _wumpus
+awakenWumpus = set wumpIsSleeping False
 
 isAdjacent :: Room -> Room -> Bool
 isAdjacent r1 r2 = isInBounds r1 && isInBounds r2 && isAdj r1 r2
@@ -234,12 +214,6 @@ getAdjRoomsTo r = gameMap V.! (r - 1)
 anyTooCrooked :: [Room] -> Bool
 anyTooCrooked rs@(a:_:c:_) = a == c || anyTooCrooked (drop 1 rs)
 anyTooCrooked _            = False
-
-minRoom :: Room
-minRoom = 1;
-
-maxRoom :: Room
-maxRoom = 20;
 
 -- | The game map in Hunt the Wumpus is laid out as a dodecahedron. The vertices of
 -- the dodecahedron are considered rooms, and each room has 3 adjacent rooms. A
