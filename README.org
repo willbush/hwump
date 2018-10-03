@@ -1,15 +1,14 @@
 * hwump
   
-  This is an implementation of Gregory Yob's [Hunt the
-  Wumpus](https://en.wikipedia.org/wiki/Hunt_the_Wumpus) text based 1972 game. I
-  made this to learn some Haskell.
-
+  This is an implementation of Gregory Yob's [[https://en.wikipedia.org/wiki/Hunt_the_Wumpus][Hunt the Wumpus]] text based 1972
+  game. I made this to learn some Haskell.
+  
 ** Building and Running
 
    1. clone the repo
    2. install [[https://docs.haskellstack.org/en/stable/README/][stack]] 
-   3. cd into the directory of the repo and ~stack build~ and ~stack exec
-      hwump-exe~
+   3. cd into the directory of the repo and =stack build= and =stack exec
+      hwump-exe=
 
 ** How to Play
 
@@ -61,4 +60,4 @@
 
    I have enabled a cheat mode that displays where everything on the map is and
    where the Wumpus moves everything it moves. Just pass the argument "cheat" to
-   the game (e.g. ~stack exec hwump-exe -- cheat~.
+   the game (e.g. =stack exec hwump-exe -- cheat=).
