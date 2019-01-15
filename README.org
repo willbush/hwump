@@ -7,8 +7,7 @@
 
    1. clone the repo
    2. install [[https://docs.haskellstack.org/en/stable/README/][stack]]
-   3. cd into the directory of the repo and =stack build= and =stack exec
-      hwump-exe=
+   3. cd into the directory of the repository and =stack run=
 
 ** How to Play
 
