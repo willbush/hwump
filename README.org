@@ -1,12 +1,12 @@
 * hwump
-  
+
   This is an implementation of Gregory Yob's [[https://en.wikipedia.org/wiki/Hunt_the_Wumpus][Hunt the Wumpus]] text based 1972
   game. I made this to learn some Haskell.
-  
+
 ** Building and Running
 
    1. clone the repo
-   2. install [[https://docs.haskellstack.org/en/stable/README/][stack]] 
+   2. install [[https://docs.haskellstack.org/en/stable/README/][stack]]
    3. cd into the directory of the repo and =stack build= and =stack exec
       hwump-exe=
 
@@ -19,7 +19,7 @@
    non-overlapping room numbers:
 
 *** 2 bottomless pits
-    
+
     - These are static hazards that do not move.
     - The player falls to their death when entered.
     - In the original game the Wumpus can go in these rooms because it has
@@ -27,7 +27,7 @@
       avoiding going into rooms with Bottomless pits.
 
 *** 2 super bats
-    
+
     - These are static hazards that do not move.
     - They snatch the player to another random room when entered.
     - keeps snatching the player until snatched to a non-bat room.
@@ -35,7 +35,7 @@
       heavy!"
 
 *** 1 Wumpus
-    
+
     - The Wumups is the monster you have to slay to win the game.
     - The Wumpus is immobile when the game starts since it is asleep.
     - Shooting an arrow on the map or entering the room of the wumpus will wake
